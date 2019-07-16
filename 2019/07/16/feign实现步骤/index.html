@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="utf-8">
+  
+
+  
+  <title>feign实现步骤 | zachary957</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="记录一下feign的实现原理，直接把流程干货提炼出来方便以后回忆。 ###启动部分 ##初始化beanDefinite 1.启动springboot初始化IOC容器，调用SpringApplication.refreshContext; 2.refresh()的invokeBeanFactoryPostProcessors，实例化所有注册了BeanFactoryPostProcessor的bean">
+<meta name="keywords" content="feign 源码">
+<meta property="og:type" content="article">
+<meta property="og:title" content="feign实现步骤">
+<meta property="og:url" content="http://yoursite.com/2019/07/16/feign实现步骤/index.html">
+<meta property="og:site_name" content="zachary957">
+<meta property="og:description" content="记录一下feign的实现原理，直接把流程干货提炼出来方便以后回忆。 ###启动部分 ##初始化beanDefinite 1.启动springboot初始化IOC容器，调用SpringApplication.refreshContext; 2.refresh()的invokeBeanFactoryPostProcessors，实例化所有注册了BeanFactoryPostProcessor的bean">
+<meta property="og:locale" content="default">
+<meta property="og:updated_time" content="2019-07-16T11:52:22.840Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="feign实现步骤">
+<meta name="twitter:description" content="记录一下feign的实现原理，直接把流程干货提炼出来方便以后回忆。 ###启动部分 ##初始化beanDefinite 1.启动springboot初始化IOC容器，调用SpringApplication.refreshContext; 2.refresh()的invokeBeanFactoryPostProcessors，实例化所有注册了BeanFactoryPostProcessor的bean">
+  
+    <link rel="alternate" href="/atom.xml" title="zachary957" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+</html>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">zachary957</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-feign实现步骤" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/07/16/feign实现步骤/" class="article-date">
+  <time datetime="2019-07-16T09:38:51.000Z" itemprop="datePublished">2019-07-16</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      feign实现步骤
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>记录一下feign的实现原理，直接把流程干货提炼出来方便以后回忆。</p>
+<p>###启动部分</p>
+<p>##初始化beanDefinite</p>
+<p>1.启动springboot初始化IOC容器，调用SpringApplication.refreshContext;</p>
+<p>2.refresh()的invokeBeanFactoryPostProcessors，实例化所有注册了BeanFactoryPostProcessor的bean;</p>
+<p>3.invokeBeanDefinitionRegistryPostProcessors，遍历所有currentRegistryProcessors，执行postProcessBeanDefinitionRegistry方法。</p>
+<p>4.因为@EnableFeignClients注入了FeignClientsRegistrar，FeignClientsRegistrar实现了ImportBeanDefinitionRegistrar，到这里会执行registerBeanDefinitions。</p>
+<p>5.registerBeanDefinitions包含2个方法，registerDefaultConfiguration和registerFeignClients。</p>
+<p>6.registerDefaultConfiguration先再判断一次启动类是否有@EnableFeignClients，然后注册FeignClientSpecification。</p>
+<p>7.registerFeignClients用于扫描所有使用了@FeignClient的类，将注解的信息全部取出，通过BeanDefinitionBuilder组合为BeanDefinition，注入到IOC容器中</p>
+<p>##实例化bean</p>
+<p>1.refresh()的finishBeanFactoryInitialization(beanFactory)，实例化bean。</p>
+<p>（我自己写了个DemoController，@Autowired了一个@FeignClient修饰的DemoService，调用链是先实例化DemoController，发现要注入DemoService调用了DepencyDescriptor.resloveCandidate方法，至于顺序后续再研究下）</p>
+<p>2.DemoService的beanFactory是FeignClientBeanFactory，会调用其getObject方法。</p>
+<p>3.先拼接url，如服务端的application.name为nagato，url为<a href="http://nagato。" target="_blank" rel="noopener">http://nagato。</a></p>
+<p>4.调用loadBalance方法</p>
+<p>5.若有hystrix熔断器逻辑则进行配置。</p>
+<p>6.最后到ReflectiveFeign调用newInstance并返回到容器中，其实就是jdk的动态代理。</p>
+<hr>
+<p>###调用部分</p>
+<p>1.调用DemoService代理类后进入invoke方法，SynchronousMethodHandler的invoke方法中首先create一个HTTP模板RequestTemplate(GET /jwt/hello HTTP/1.1)。</p>
+<p>2.克隆一个Retryer重试Bean，进入executeAndDecode方法。</p>
+<p>3.之前拼接了一个url，再次拼接为(GET <a href="http://nagato/jwt/hello" target="_blank" rel="noopener">http://nagato/jwt/hello</a> HTTP/1.1)</p>
+<p>4.调用client发送请求并解析返回结果，这里的client非常关键。</p>
+<p>（查看FeignAutoConfiguration可以发现@ConditionalOnClass，如果pom里有feign-httpclient，则使用httpclient调用，如果pom里有feign-okhttp，则使用okhttp调用，我2个都没导入，这里用的client是LoadBalancerFeignClient）</p>
+<p>5.LoadBalancerFeignClient有个executeWithLoadBalancer方法，即负载均衡的实现方法。</p>
+<p>6.负载均衡由loadBalancerContext实现，内部之后再分析。</p>
+<p>7.（这里用到了rxjava，有点知识盲区了）调用结束后decode返回的报文，decode后作为结果返回。</p>
+<p>8.进入InvocableHandlerMethod的invoke方法，回到原来调用DemoService方法，继续执行。</p>
+<hr>
+<p>还有好多细节没有搞懂，之后继续分析。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/07/16/feign实现步骤/" data-id="cjy5rc1lt0000m8ijf9d3rb7z" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/feign-源码/">feign 源码</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/feign-源码/">feign 源码</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/feign-源码/" style="font-size: 10px;">feign 源码</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/07/16/feign实现步骤/">feign实现步骤</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2019 John Doe<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+
+
+  </div>
+</body>
+</html>

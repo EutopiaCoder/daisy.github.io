@@ -5,15 +5,22 @@
   
 
   
-  <title>一个懒得改主题的码农</title>
+  <title>JDK动态代理源码解析 | 一个懒得改主题的码农</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="一个懒得改主题的码农">
-<meta property="og:url" content="http://yoursite.com/index.html">
+  <meta name="description" content="打算写一个十分详细的源码解析，因为之前问到了JDK动态代理和Cglib的区别，而且动态代理可以说在现主流框架里用的极其广泛，好好分析一波！ 先写个刻在DNA里的动态代理DEMO 被代理类 1234567interface UserService &amp;#123;    void add(String name);&amp;#125;interface DemoService &amp;#123;    void de">
+<meta name="keywords" content="debug一时爽，一直debug一直爽">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JDK动态代理源码解析">
+<meta property="og:url" content="http://yoursite.com/2019/07/17/JDK动态代理源码解析/index.html">
 <meta property="og:site_name" content="一个懒得改主题的码农">
+<meta property="og:description" content="打算写一个十分详细的源码解析，因为之前问到了JDK动态代理和Cglib的区别，而且动态代理可以说在现主流框架里用的极其广泛，好好分析一波！ 先写个刻在DNA里的动态代理DEMO 被代理类 1234567interface UserService &amp;#123;    void add(String name);&amp;#125;interface DemoService &amp;#123;    void de">
 <meta property="og:locale" content="default">
+<meta property="og:image" content="http://yoursite.com/2019/07/17/JDK动态代理源码解析/%E6%86%A8%E7%AC%91.jpg">
+<meta property="og:updated_time" content="2019-07-17T17:19:05.104Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="一个懒得改主题的码农">
+<meta name="twitter:title" content="JDK动态代理源码解析">
+<meta name="twitter:description" content="打算写一个十分详细的源码解析，因为之前问到了JDK动态代理和Cglib的区别，而且动态代理可以说在现主流框架里用的极其广泛，好好分析一波！ 先写个刻在DNA里的动态代理DEMO 被代理类 1234567interface UserService &amp;#123;    void add(String name);&amp;#125;interface DemoService &amp;#123;    void de">
+<meta name="twitter:image" content="http://yoursite.com/2019/07/17/JDK动态代理源码解析/%E6%86%A8%E7%AC%91.jpg">
   
     <link rel="alternate" href="/atom.xml" title="一个懒得改主题的码农" type="application/atom+xml">
   
@@ -60,9 +67,7 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-    <article id="post-JDK动态代理源码解析" class="article article-type-post" itemscope itemprop="blogPost">
+        <section id="main"><article id="post-JDK动态代理源码解析" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/07/17/JDK动态代理源码解析/" class="article-date">
   <time datetime="2019-07-17T15:02:49.000Z" itemprop="datePublished">2019-07-17</time>
@@ -75,8 +80,8 @@
       <header class="article-header">
         
   
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/07/17/JDK动态代理源码解析/">JDK动态代理源码解析</a>
+    <h1 class="article-title" itemprop="name">
+      JDK动态代理源码解析
     </h1>
   
 
@@ -151,211 +156,19 @@
     </footer>
   </div>
   
-</article>
-
-
+    
+<nav id="article-nav">
   
-    <article id="post-Transactional实现步骤" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/07/17/Transactional实现步骤/" class="article-date">
-  <time datetime="2019-07-17T07:05:02.000Z" itemprop="datePublished">2019-07-17</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
   
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/07/17/Transactional实现步骤/">Transactional实现步骤</a>
-    </h1>
+    <a href="/2019/07/17/Transactional实现步骤/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Transactional实现步骤</div>
+    </a>
   
+</nav>
 
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>想当初当实习生的时候，Spring Boot一个@Transactional就能实现事务控制了，不像在家自学的时候还要配置事务管理器，写web.xml，感叹真是个好用的框架。</p>
-<p>工作了也快一年半了，不能只会用，还要知道原理是什么，为什么一个注解就能实现本该很复杂的功能，启动Spring Boot的时候都发生了什么，今天跟踪源码走一圈流程。</p>
-<p>这次倒着推理一下，首先上次面试有道题是事务传播会失效吗，其实在同一个类里调用另外一个带@Transactional注解的方法，后者的事务是会失效的，上图。<img src="/2019/07/17/Transactional实现步骤/001.png" alt></p>
-<p>理论上我调用firstAdd方法，内部再调用了secondAdd方法，数据库里应该只有firstAdd字段才对，但实际上两者都没有回滚。我打印了一下controller层@Autowired的service和firstAdd方法里的secondAdd方法(等同于this.secondAdd())，真相大白。</p>
-<p><img src="/2019/07/17/Transactional实现步骤/02.png" alt></p>
-<p>实际上Spring给我们注入的是Cglib增强过的代理类，this当然是无法实现事务的，一定有哪里扫描到了@Transactional注解实例化并返回了同名的代理类，那么就简单了，给DynamicAdvisedInterceptor的intercept打个断点（类似于JDK的InvocationHandler的invoke）。</p>
-<p>反正给自己看的，后面直接把流程干货提出来吧 <img src="/2019/07/17/Transactional实现步骤/%E6%80%82.jpg" alt></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Object&gt; chain = <span class="keyword">this</span>.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);</span><br></pre></td></tr></table></figure>
-
-<p>(这里先无视chain数组里的值哪里来的)</p>
-<p>chain内部有一个TransactionalInterceptor</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">retVal = <span class="keyword">new</span> CglibMethodInvocation(proxy, target, method, args, targetClass, chain, methodProxy).proceed();</span><br></pre></td></tr></table></figure>
-
-<p>进入proceed()方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(<span class="keyword">this</span>);</span><br></pre></td></tr></table></figure>
-
-<p>不得不说Spring的命名真的优雅，TransactionInterceptor明显是MethodInterceptor的子类。</p>
-<p>进入invoke方法。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> invokeWithinTransaction(invocation.getMethod(), targetClass, </span><br><span class="line">    <span class="keyword">new</span> InvocationCallback() &#123;   </span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> Object <span class="title">proceedWithInvocation</span><span class="params">()</span> <span class="keyword">throws</span> Throwable </span>&#123;      </span><br><span class="line">            <span class="keyword">return</span> invocation.proceed();   </span><br><span class="line">        &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-
-<p>这一步得出@Transactional上对应的参数：事务传播，事务隔离等，然后封装成一个类</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> TransactionAttribute txAttr = getTransactionAttributeSource().getTransactionAttribute(method, targetClass);</span><br></pre></td></tr></table></figure>
-
-<p>这一步用于得到事务管理器，用于之后的提交或者回滚</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> PlatformTransactionManager tm = determineTransactionManager(txAttr);</span><br></pre></td></tr></table></figure>
-
-<p>之后就是执行SQL了</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">retVal = invocation.proceedWithInvocation();</span><br></pre></td></tr></table></figure>
-
-<p>这里用try-catch裹上一层，如果catch到异常，</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">completeTransactionAfterThrowing(txInfo, ex);</span><br></pre></td></tr></table></figure>
-
-<p>先判断是否能和注解上明示的异常匹配，不能就用父类判断(RuntimeException或者Error)。</p>
-<p>没有抛异常就提交事务。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">commitTransactionAfterReturning(txInfo);</span><br></pre></td></tr></table></figure>
-
-<p>本质还是JDBC，底层代码太长就不看了。（其实是看不懂）</p>
-<p>之后分析下什么时候我们注入的service被增强为代理类，以及这个TransactionInterceptor从哪来的。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjy7ifz5y0001qkijk96yn7ue" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
-
-    </footer>
-  </div>
   
 </article>
-
-
-  
-    <article id="post-面试题总结" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/07/16/面试题总结/" class="article-date">
-  <time datetime="2019-07-16T15:57:40.000Z" itemprop="datePublished">2019-07-16</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/07/16/面试题总结/">面试题总结</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>面试的蓝色速度，感觉挺活跃的一家公司，问的题目都比较细，自己答的有些太简单了，记录一下印象比较深自己没答好的题目。</p>
-<p>1.dubbo的Transport实现原理（其实面试官是想考我netty…僵了一会跳过这道题了</p>
-<p>2.SpringCloud的feign和ribbon有什么区别，feign是怎么实现的（上一篇文章中跟着源码走了一遍，其实就是bean实例化的时候生成了代理类，代理类的invoke里有个HttpUrlConnection）</p>
-<p>3.事务传播会失效吗？</p>
-<p>4.spring和mybatis里有哪些设计模式？（虽然说出来了对应设计模式的名字但解释的太简单了…</p>
-<p>5.jdk的动态代理生成的代理类和cglib生成的代理类有什么区别？</p>
-<p>6.rabbitmq实现原理（不是api的用法，不是api的用法，不是api的用法</p>
-<p>7.常见的数据结构，查询插入复杂度啥的</p>
-<p>8.设计模式。其实同第4点，解释的太生涩简单了</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/16/面试题总结/" data-id="cjy7ifz6t0006qkij6fviisa3" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-feign实现步骤" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/07/16/feign实现步骤/" class="article-date">
-  <time datetime="2019-07-16T09:38:51.000Z" itemprop="datePublished">2019-07-16</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/07/16/feign实现步骤/">feign实现步骤</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>记录一下feign的实现原理，直接把流程干货提炼出来方便以后回忆。</p>
-<h4 id="启动部分"><a href="#启动部分" class="headerlink" title="启动部分"></a>启动部分</h4><h5 id="初始化beanDefinite"><a href="#初始化beanDefinite" class="headerlink" title="初始化beanDefinite"></a>初始化beanDefinite</h5><p>1.启动springboot初始化IOC容器，调用SpringApplication.refreshContext;</p>
-<p>2.refresh()的invokeBeanFactoryPostProcessors，实例化所有注册了BeanFactoryPostProcessor的bean;</p>
-<p>3.invokeBeanDefinitionRegistryPostProcessors，遍历所有currentRegistryProcessors，执行postProcessBeanDefinitionRegistry方法。</p>
-<p>4.因为@EnableFeignClients注入了FeignClientsRegistrar，FeignClientsRegistrar实现了ImportBeanDefinitionRegistrar，到这里会执行registerBeanDefinitions。</p>
-<p>5.registerBeanDefinitions包含2个方法，registerDefaultConfiguration和registerFeignClients。</p>
-<p>6.registerDefaultConfiguration先再判断一次启动类是否有@EnableFeignClients，然后注册FeignClientSpecification。</p>
-<p>7.registerFeignClients用于扫描所有使用了@FeignClient的类，将注解的信息全部取出，通过BeanDefinitionBuilder组合为BeanDefinition，注入到IOC容器中</p>
-<h5 id="实例化bean"><a href="#实例化bean" class="headerlink" title="实例化bean"></a>实例化bean</h5><p>1.refresh()的finishBeanFactoryInitialization(beanFactory)，实例化bean。</p>
-<p>（我自己写了个DemoController，@Autowired了一个@FeignClient修饰的DemoService，调用链是先实例化DemoController，发现要注入DemoService调用了DepencyDescriptor.resloveCandidate方法，至于顺序后续再研究下）</p>
-<p>2.DemoService的beanFactory是FeignClientBeanFactory，会调用其getObject方法。</p>
-<p>3.先拼接url，如服务端的application.name为nagato，url为<a href="http://nagato。" target="_blank" rel="noopener">http://nagato。</a></p>
-<p>4.调用loadBalance方法</p>
-<p>5.若有hystrix熔断器逻辑则进行配置。</p>
-<p>6.最后到ReflectiveFeign调用newInstance并返回到容器中，其实就是jdk的动态代理。</p>
-<hr>
-<h4 id="调用部分"><a href="#调用部分" class="headerlink" title="调用部分"></a>调用部分</h4><p>1.调用DemoService代理类后进入invoke方法，SynchronousMethodHandler的invoke方法中首先create一个HTTP模板RequestTemplate(GET /jwt/hello HTTP/1.1)。</p>
-<p>2.克隆一个Retryer重试Bean，进入executeAndDecode方法。</p>
-<p>3.之前拼接了一个url，再次拼接为(GET <a href="http://nagato/jwt/hello" target="_blank" rel="noopener">http://nagato/jwt/hello</a> HTTP/1.1)</p>
-<p>4.调用client发送请求并解析返回结果，这里的client非常关键。</p>
-<p>（查看FeignAutoConfiguration可以发现@ConditionalOnClass，如果pom里有feign-httpclient，则使用httpclient调用，如果pom里有feign-okhttp，则使用okhttp调用，我2个都没导入，这里用的client是LoadBalancerFeignClient）</p>
-<p>5.LoadBalancerFeignClient的executeWithLoadBalancer方法，分为两个步骤，command.submit实现负载均衡，subimt传参为ServerOperation匿名类，内部实现了call，http调用在这里实现。</p>
-<p>6.call往里研究，跟踪到convertAndSend这一步，本质还是HttpURLConnection(我这次调用的url为<a href="http://join-PC:9001/jwt/hello)。" target="_blank" rel="noopener">http://join-PC:9001/jwt/hello)。</a></p>
-<p>7.刻在DNA里的out.write(request.body())</p>
-<p>7.得到返回的报文，decode处理后作为结果返回。</p>
-<p>8.进入InvocableHandlerMethod的invoke方法，回到原来调用DemoService方法，继续执行。</p>
-<hr>
-<p><code>HttpURLConnection connection = (HttpURLConnection) new URL(&quot;http://join-PC:9000/jwt/hello&quot;).openConnection();</code></p>
-<p><code>connection.setDoOutput(true);connection.setConnectTimeout(1000);connection.setReadTimeout(1000);</code></p>
-<p><code>connection.setAllowUserInteraction(false);</code></p>
-<p><code>connection.setInstanceFollowRedirects(true);</code></p>
-<p><code>connection.setRequestMethod(&quot;GET&quot;);</code></p>
-<p><code>connection.addRequestProperty(&quot;Accept&quot;, &quot;*/*&quot;);</code></p>
-<p><code>InputStream stream = connection.getInputStream();</code></p>
-<p><code>BufferedReader reader = new BufferedReader(new InputStreamReader(stream));</code></p>
-<p><code>String line;while ((line = reader.readLine()) != null) {    System.out.println(line);}</code></p>
-<p><code>stream.close();</code></p>
-<hr>
-<p>还有好多细节没有搞懂，比如这个InvocableHandlerMethod，之后继续分析。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/16/feign实现步骤/" data-id="cjy7ifz6x0007qkij89oqvjhk" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-
 
 </section>
         

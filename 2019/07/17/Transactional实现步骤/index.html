@@ -18,7 +18,7 @@
 <meta property="og:image" content="http://yoursite.com/2019/07/17/Transactional实现步骤/001.png">
 <meta property="og:image" content="http://yoursite.com/2019/07/17/Transactional实现步骤/02.png">
 <meta property="og:image" content="http://yoursite.com/2019/07/17/Transactional实现步骤/%E6%80%82.jpg">
-<meta property="og:updated_time" content="2019-07-17T13:30:44.873Z">
+<meta property="og:updated_time" content="2019-07-17T13:36:50.518Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Transactional实现步骤">
 <meta name="twitter:description" content="想当初当实习生的时候，Spring Boot一个@Transactional就能实现事务控制了，不像在家自学的时候还要配置事务管理器，写web.xml，感叹真是个好用的框架。 工作了也快一年半了，不能只会用，还要知道原理是什么，为什么一个注解就能实现本该很复杂的功能，启动Spring Boot的时候都发生了什么，今天跟踪源码走一圈流程。 这次倒着推理一下，首先上次面试有道题是事务传播会失效吗，其实">
@@ -118,11 +118,21 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> PlatformTransactionManager tm = determineTransactionManager(txAttr);</span><br></pre></td></tr></table></figure>
 
 <p>之后就是执行SQL了</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">retVal = invocation.proceedWithInvocation();</span><br></pre></td></tr></table></figure>
+
+<p>这里用try-catch裹上一层，如果catch到异常，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">completeTransactionAfterThrowing(txInfo, ex);</span><br></pre></td></tr></table></figure>
+
+<p>先判断是否能和注解上明示的异常匹配，不能就调用父类默认的RuntimeException或者Error。</p>
+<p>没有抛异常就执行</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">commitTransactionAfterReturning(txInfo);</span><br></pre></td></tr></table></figure>
+
+<p>本质还是JDBC，底层代码太长就不看了。（其实是看不懂）</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjy7aaxg30003ccij0z9ulhw4" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjy7aia0d0000pwijyr3h1dn2" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>

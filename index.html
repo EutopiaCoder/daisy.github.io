@@ -116,8 +116,8 @@
 <p>这里用try-catch裹上一层，如果catch到异常，</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">completeTransactionAfterThrowing(txInfo, ex);</span><br></pre></td></tr></table></figure>
 
-<p>先判断是否能和注解上明示的异常匹配，不能就调用父类默认的RuntimeException或者Error。</p>
-<p>没有抛异常就执行</p>
+<p>先判断是否能和注解上明示的异常匹配，不能就用父类判断(RuntimeException或者Error)。</p>
+<p>没有抛异常就提交事务。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">commitTransactionAfterReturning(txInfo);</span><br></pre></td></tr></table></figure>
 
 <p>本质还是JDBC，底层代码太长就不看了。（其实是看不懂）</p>
@@ -125,7 +125,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjy7aia0d0000pwijyr3h1dn2" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjy7akr2z0000hsij42vn4hay" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
@@ -172,7 +172,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/16/面试题总结/" data-id="cjy7aia0x0003pwijw9qnf07g" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/16/面试题总结/" data-id="cjy7akr3a0001hsijcrriflzp" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
@@ -249,7 +249,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/16/feign实现步骤/" data-id="cjy7aia0l0001pwij3qf490ln" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/16/feign实现步骤/" data-id="cjy7akr3m0003hsij3dy5mwd7" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li></ul>

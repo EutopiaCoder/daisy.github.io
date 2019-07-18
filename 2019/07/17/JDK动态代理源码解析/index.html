@@ -16,7 +16,7 @@
 <meta property="og:description" content="打算写一个十分详细的源码解析，因为之前问到了JDK动态代理和Cglib的区别，而且动态代理可以说在现主流框架里用的极其广泛，好好分析一波！ 先写个刻在DNA里的动态代理DEMO 被代理类 1234567interface UserService &amp;#123;    void add(String name);&amp;#125;interface DemoService &amp;#123;    void de">
 <meta property="og:locale" content="default">
 <meta property="og:image" content="http://yoursite.com/2019/07/17/JDK动态代理源码解析/%E6%86%A8%E7%AC%91.jpg">
-<meta property="og:updated_time" content="2019-07-17T17:19:05.104Z">
+<meta property="og:updated_time" content="2019-07-18T06:12:24.904Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="JDK动态代理源码解析">
 <meta name="twitter:description" content="打算写一个十分详细的源码解析，因为之前问到了JDK动态代理和Cglib的区别，而且动态代理可以说在现主流框架里用的极其广泛，好好分析一波！ 先写个刻在DNA里的动态代理DEMO 被代理类 1234567interface UserService &amp;#123;    void add(String name);&amp;#125;interface DemoService &amp;#123;    void de">
@@ -142,13 +142,21 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> $<span class="title">Proxy0</span> <span class="keyword">extends</span> <span class="title">Proxy</span></span></span><br><span class="line"><span class="class">    <span class="keyword">implements</span> <span class="title">UserService</span></span></span><br><span class="line"><span class="class">/...</span></span><br><span class="line"><span class="class"><span class="title">public</span> <span class="title">final</span> <span class="title">void</span> <span class="title">add</span>(<span class="title">String</span> <span class="title">name</span>)</span></span><br><span class="line"><span class="class">    </span>&#123;</span><br><span class="line">        <span class="keyword">try</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// invocation handler的 invoke方法在这里被调用</span></span><br><span class="line">            <span class="keyword">super</span>.h.invoke(<span class="keyword">this</span>, m3, <span class="keyword">new</span> Object[] &#123;</span><br><span class="line">                name</span><br><span class="line">            &#125;);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">catch</span> (Error ) &#123; &#125;</span><br><span class="line">        <span class="keyword">catch</span> (Throwable throwable)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> UndeclaredThrowableException(throwable);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
 
 <p>这就是为什么断点会进到invoke，而且最初的demo会报ClassCastException，因为代理类根本就没实现DemoService。</p>
+<p>因为Java不支持多继承，代理类已经继承了Proxy类，所以只能依靠接口来生成代理类。</p>
 <hr>
 <p>分析到这里就结束了，没有深究Key那里的缓存机制，至少以后调用Proxy.newProxyInstance知道内部发生什么了，神清气爽！<img src="/2019/07/17/JDK动态代理源码解析/%E6%86%A8%E7%AC%91.jpg" alt></p>
+<hr>
+<p>补充：又看了一遍Cglib的源码，大致换汤不换药，生成的代理类是这样的</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">UserService</span>$$<span class="title">EnhancerByCGLIB</span> <span class="keyword">extends</span> <span class="title">UserService</span></span></span><br><span class="line"><span class="class">    <span class="keyword">implements</span> <span class="title">Factory</span></span></span><br></pre></td></tr></table></figure>
+
+<p>实现的原理是将被代理类作为父类，实现Factory，这样在调用父类方法的时候可以和MethodInterceptor的invoke方法结合起来从而实现动态代理。</p>
+<p>总结就是JDK动态代理不依赖第三方jar包，但只能代理有接口的类</p>
+<p>Cglib也可以代理普通类，代理速度快，但因为是继承的机制，不能代理final方法。而且在生成字节码的时候会产生3个类，速度较慢。</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/JDK动态代理源码解析/" data-id="cjy7ifz5r0000qkijmhoy00ef" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/17/JDK动态代理源码解析/" data-id="cjy8a32i200006cijvtnqf50j" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li></ul>

@@ -62,6 +62,81 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-eureka实现步骤" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/07/18/eureka实现步骤/" class="article-date">
+  <time datetime="2019-07-18T07:33:53.000Z" itemprop="datePublished">2019-07-18</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/07/18/eureka实现步骤/">eureka实现步骤</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>之前记录feign实现步骤的时候，IOC容器实例化bean会调用FeignClientFactoryBean的getObject方法，会根据配置文件里的application.name拼装一个url，比如<a href="http://nagato，封装成InvocationHandler生成feign代理类。" target="_blank" rel="noopener">http://nagato，封装成InvocationHandler生成feign代理类。</a></p>
+<p>后面在调用executeWithLoadBalancer的command.submit方法时，只分析到ribbon会调用EurekaClient根据application.name获取eureka的服务实例列表，再通过ribbon自己的算法得到对应的实例地址，紧接着调用subimt内部的ServerOperation类实现Http调用。</p>
+<p>今天来看下eureka是怎么进行服务注册、续约、获取注册列表、服务下线和服务清除。</p>
+<p>现在看源码还是不太熟练，不借助官方文档只能靠猜了，先启动个eureka注册中心吧，代码特别简单。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@EnableEurekaServer</span></span><br><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CenterBootStrap</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(CenterBootStrap.class, args);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>EurekaClient的子类DiscoveryClient有个方法叫register，我们看下注释</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Register with the eureka service by making the appropriate REST call.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">register</span><span class="params">()</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">        logger.info(PREFIX + <span class="string">"&#123;&#125;: registering service..."</span>, appPathIdentifier);</span><br><span class="line">        EurekaHttpResponse&lt;Void&gt; httpResponse;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            httpResponse = eurekaTransport.registrationClient.register(instanceInfo);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            logger.warn(PREFIX + <span class="string">"&#123;&#125; - registration failed &#123;&#125;"</span>, appPathIdentifier, e.getMessage(), e);</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (logger.isInfoEnabled()) &#123;</span><br><span class="line">            logger.info(PREFIX + <span class="string">"&#123;&#125; - registration status: &#123;&#125;"</span>, appPathIdentifier, httpResponse.getStatusCode());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> httpResponse.getStatusCode() == <span class="number">204</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过一个正确的RESTful请求注册一个eureka服务，应该就是你了，打个断点，我们再启动个服务注册上去</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">NagatoApplication</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(NagatoApplication.class, args);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>果然进断点了</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">httpResponse = eurekaTransport.registrationClient.register(instanceInfo);</span><br></pre></td></tr></table></figure>
+
+<p>往上找，发现是在InstanceInfoReplicator类里调用的，这块代码比较上，贴一下调用链。</p>
+<p>1.DiscoveryClient初始化的时候会new一堆线程池，用来负责上面提到的服务注册、服务续约等功能</p>
+<p>2.有服务要注册的时候statusChangeListener会监听到请求，调用instanceInfoReplicator.onDemandUpdate();</p>
+<p>3.onDemandUpdate方法调用InstanceInfoReplicator.this.run();</p>
+<p>4.InstanceInfoReplicator实现了runnable，调用run内部的discoveryClient.register()方法，即上面贴的register方法。顺带一提这个方法的finally块也会同时开启服务续约的定时任务。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            discoveryClient.refreshInstanceInfo();</span><br><span class="line"></span><br><span class="line">            Long dirtyTimestamp = instanceInfo.isDirtyWithTime();</span><br><span class="line">            <span class="keyword">if</span> (dirtyTimestamp != <span class="keyword">null</span>) &#123;</span><br><span class="line">                discoveryClient.register();</span><br><span class="line">                instanceInfo.unsetIsDirty(dirtyTimestamp);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">            logger.warn(<span class="string">"There was a problem with the instance info replicator"</span>, t);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            Future next = scheduler.schedule(<span class="keyword">this</span>, replicationIntervalSeconds, TimeUnit.SECONDS);</span><br><span class="line">            scheduledPeriodicRef.set(next);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>调用完register方法之后发现注册中心的控制台输出了nagato服务注册的log，代表EurekaServer接收到了请求并注册到了eureka上，猜了半天名字猜到了EurekaBootStrap这个类。</p>
+<p>这个方法没有register方法，查询init开头找到了initEurekaServerContext这个方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 省略一部分代码</span></span><br><span class="line">PeerAwareInstanceRegistry registry;</span><br><span class="line">        <span class="keyword">if</span> (isAws(applicationInfoManager.getInfo())) &#123;</span><br><span class="line">            registry = <span class="keyword">new</span> AwsInstanceRegistry(</span><br><span class="line">                    eurekaServerConfig,</span><br><span class="line">                    eurekaClient.getEurekaClientConfig(),</span><br><span class="line">                    serverCodecs,</span><br><span class="line">                    eurekaClient</span><br><span class="line">            );</span><br><span class="line">            awsBinder = <span class="keyword">new</span> AwsBinderDelegate(eurekaServerConfig, eurekaClient.getEurekaClientConfig(), registry, applicationInfoManager);</span><br><span class="line">            awsBinder.start();</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            registry = <span class="keyword">new</span> PeerAwareInstanceRegistryImpl(</span><br><span class="line">                    eurekaServerConfig,</span><br><span class="line">                    eurekaClient.getEurekaClientConfig(),</span><br><span class="line">                    serverCodecs,</span><br><span class="line">                    eurekaClient</span><br><span class="line">            );</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        PeerEurekaNodes peerEurekaNodes = getPeerEurekaNodes(</span><br><span class="line">                registry,</span><br><span class="line">                eurekaServerConfig,</span><br><span class="line">                eurekaClient.getEurekaClientConfig(),</span><br><span class="line">                serverCodecs,</span><br><span class="line">                applicationInfoManager</span><br><span class="line">        );</span><br></pre></td></tr></table></figure>
+
+<p>猫腻应该就在PeerAwareInstanceRegistryImpl里面了，进去看下，果然有register方法在这里</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">register</span><span class="params">(<span class="keyword">final</span> InstanceInfo info, <span class="keyword">final</span> <span class="keyword">boolean</span> isReplication)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> leaseDuration = Lease.DEFAULT_DURATION_IN_SECS;</span><br><span class="line">        <span class="keyword">if</span> (info.getLeaseInfo() != <span class="keyword">null</span> &amp;&amp; info.getLeaseInfo().getDurationInSecs() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            leaseDuration = info.getLeaseInfo().getDurationInSecs();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">super</span>.register(info, leaseDuration, isReplication);</span><br><span class="line">        replicateToPeers(Action.Register, info.getAppName(), info.getId(), info, <span class="keyword">null</span>, isReplication);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>父类的register方法太长，把注释贴一下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Registers a new instance with a given duration.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@see</span> com.netflix.eureka.lease.LeaseManager#register(java.lang.Object, int, boolean)</span></span><br><span class="line"><span class="comment">*/</span></span><br></pre></td></tr></table></figure>
+
+<p>和查EurekaClient一样，我们往上查哪里调用的，最终发现在ApplicationResource方法暴露了一个接口</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@POST</span></span><br><span class="line">    <span class="meta">@Consumes</span>(&#123;<span class="string">"application/json"</span>, <span class="string">"application/xml"</span>&#125;)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Response <span class="title">addInstance</span><span class="params">(InstanceInfo info,</span></span></span><br><span class="line"><span class="function"><span class="params">                                @HeaderParam(PeerEurekaNode.HEADER_REPLICATION)</span> String isReplication) </span>&#123;</span><br><span class="line">        logger.debug(<span class="string">"Registering instance &#123;&#125; (replication=&#123;&#125;)"</span>, info.getId(), isReplication);</span><br><span class="line">        <span class="comment">// validate that the instanceinfo contains all the necessary required fields</span></span><br><span class="line">        <span class="keyword">if</span> (isBlank(info.getId())) &#123;</span><br><span class="line">            <span class="keyword">return</span> Response.status(<span class="number">400</span>).entity(<span class="string">"Missing instanceId"</span>).build();</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (isBlank(info.getHostName())) &#123;</span><br><span class="line">            <span class="keyword">return</span> Response.status(<span class="number">400</span>).entity(<span class="string">"Missing hostname"</span>).build();</span><br><span class="line">/.... 省略</span><br></pre></td></tr></table></figure>
+
+<p>为了保证没找错，这里也打一个断点，重启一次nagato服务，发现先进了eureka client那边，然后调用了eureka server这边，没毛病！服务成功注册到了eureka上。</p>
+<p>我们看一下com.netflix.eureka.resouces，ApplicationResource就在这个文件夹里</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/07/18/eureka实现步骤/" data-id="cjy8fh51e0000tkij6j705ehw" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-JDK动态代理源码解析" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/07/17/JDK动态代理源码解析/" class="article-date">
@@ -151,7 +226,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/JDK动态代理源码解析/" data-id="cjy8a32i200006cijvtnqf50j" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/17/JDK动态代理源码解析/" data-id="cjy8fh52o000ctkijvgefqy2p" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li></ul>
@@ -227,7 +302,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjy8a32jj00046cijodht0m29" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjy8fh51q0003tkijl51rbisr" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
@@ -274,7 +349,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/16/面试题总结/" data-id="cjy8a32je00036cijker6xmip" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/16/面试题总结/" data-id="cjy8fh51z0004tkijwth4upmk" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
@@ -351,7 +426,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/16/feign实现步骤/" data-id="cjy8a32iq00016cijyp7857pf" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/16/feign实现步骤/" data-id="cjy8fh51k0001tkijd43uwm8f" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li></ul>
@@ -386,7 +461,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/debug一时爽，一直debug一直爽/" style="font-size: 10px;">debug一时爽，一直debug一直爽</a> <a href="/tags/feign-源码-调用链/" style="font-size: 10px;">feign 源码 调用链</a> <a href="/tags/源码-调用链/" style="font-size: 10px;">源码 调用链</a> <a href="/tags/面试题/" style="font-size: 10px;">面试题</a>
+      <a href="/tags/debug一时爽，一直debug一直爽/" style="font-size: 10px;">debug一时爽，一直debug一直爽</a> <a href="/tags/feign-源码-调用链/" style="font-size: 10px;">feign 源码 调用链</a> <a href="/tags/源码-调用链/" style="font-size: 20px;">源码 调用链</a> <a href="/tags/面试题/" style="font-size: 10px;">面试题</a>
     </div>
   </div>
 
@@ -406,6 +481,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2019/07/18/eureka实现步骤/">eureka实现步骤</a>
+          </li>
         
           <li>
             <a href="/2019/07/17/JDK动态代理源码解析/">JDK动态代理源码解析</a>

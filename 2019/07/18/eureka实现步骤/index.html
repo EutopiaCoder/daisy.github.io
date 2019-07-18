@@ -15,10 +15,12 @@
 <meta property="og:site_name" content="一个懒得改主题的码农">
 <meta property="og:description" content="之前记录feign实现步骤的时候，IOC容器实例化bean会调用FeignClientFactoryBean的getObject方法，会根据配置文件里的application.name拼装一个url，比如http://nagato，封装成InvocationHandler生成feign代理类。 后面在调用executeWithLoadBalancer的command.submit方法时，只分析到r">
 <meta property="og:locale" content="default">
-<meta property="og:updated_time" content="2019-07-18T08:43:29.114Z">
+<meta property="og:image" content="http://yoursite.com/2019/07/18/eureka实现步骤/001.png">
+<meta property="og:updated_time" content="2019-07-18T08:59:40.317Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="eureka实现步骤">
 <meta name="twitter:description" content="之前记录feign实现步骤的时候，IOC容器实例化bean会调用FeignClientFactoryBean的getObject方法，会根据配置文件里的application.name拼装一个url，比如http://nagato，封装成InvocationHandler生成feign代理类。 后面在调用executeWithLoadBalancer的command.submit方法时，只分析到r">
+<meta name="twitter:image" content="http://yoursite.com/2019/07/18/eureka实现步骤/001.png">
   
     <link rel="alternate" href="/atom.xml" title="一个懒得改主题的码农" type="application/atom+xml">
   
@@ -124,11 +126,15 @@
 
 <p>为了保证没找错，这里也打一个断点，重启一次nagato服务，发现先进了eureka client那边，然后调用了eureka server这边，没毛病！服务成功注册到了eureka上。</p>
 <p>我们看一下com.netflix.eureka.resouces，ApplicationResource就在这个文件夹里</p>
+<p><img src="/2019/07/18/eureka实现步骤/001.png" alt></p>
+<p>可以类比理解为平时开发的那个Controller层了，像什么续约，获取注册列表，清除服务都在这里。</p>
+<p>有一次发现注册中心警告了，也和服务清除有关系，百度一段粘过来先</p>
+<p>自我保护模式：Eureka Server接收的续约低于配置的85%时，开启自我保护模式，不再清除服务。</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/18/eureka实现步骤/" data-id="cjy8fh51e0000tkij6j705ehw" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/18/eureka实现步骤/" data-id="cjy8g1rhw0001xcijqs7ssgua" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>

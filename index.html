@@ -121,11 +121,15 @@
 
 <p>为了保证没找错，这里也打一个断点，重启一次nagato服务，发现先进了eureka client那边，然后调用了eureka server这边，没毛病！服务成功注册到了eureka上。</p>
 <p>我们看一下com.netflix.eureka.resouces，ApplicationResource就在这个文件夹里</p>
+<p><img src="/2019/07/18/eureka实现步骤/001.png" alt></p>
+<p>可以类比理解为平时开发的那个Controller层了，像什么续约，获取注册列表，清除服务都在这里。</p>
+<p>有一次发现注册中心警告了，也和服务清除有关系，百度一段粘过来先</p>
+<p>自我保护模式：Eureka Server接收的续约低于配置的85%时，开启自我保护模式，不再清除服务。</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/18/eureka实现步骤/" data-id="cjy8fh51e0000tkij6j705ehw" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/18/eureka实现步骤/" data-id="cjy8g1rhw0001xcijqs7ssgua" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
@@ -226,7 +230,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/JDK动态代理源码解析/" data-id="cjy8fh52o000ctkijvgefqy2p" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/17/JDK动态代理源码解析/" data-id="cjy8g1rhp0000xcijkkyfj7rt" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li></ul>
@@ -302,7 +306,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjy8fh51q0003tkijl51rbisr" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjy8g1ri90003xcijkssq2ggq" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
@@ -349,7 +353,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/16/面试题总结/" data-id="cjy8fh51z0004tkijwth4upmk" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/16/面试题总结/" data-id="cjy8g1rj0000axcijgvkvvs3z" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
@@ -426,7 +430,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/16/feign实现步骤/" data-id="cjy8fh51k0001tkijd43uwm8f" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/16/feign实现步骤/" data-id="cjy8g1riw0009xcijaonzd3r6" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li></ul>

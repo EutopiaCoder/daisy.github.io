@@ -62,6 +62,91 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-redis字典学习笔记" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/07/26/redis字典学习笔记/" class="article-date">
+  <time datetime="2019-07-26T14:26:30.000Z" itemprop="datePublished">2019-07-26</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/07/26/redis字典学习笔记/">redis字典学习笔记</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ul>
+<li>redis的hash怎么实现的？</li>
+<li>rehash过程讲一下？和java的ConcurrentHashMap的rehash有什么区别？</li>
+</ul>
+<p>大道理都懂，问细节就崩溃，《Redis设计与实现》这本书不错，仔细读了一下字典这一节，记一下笔记。（还能蹭点C语言）</p>
+<p>redis数据结构:</p>
+<p>字典底层由哈希表实现</p>
+<p>哈希表:<br>dict.h/dictht </p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">dictht</span>&#123;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 哈希表数组</span></span><br><span class="line">dictEntry **table;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 哈希表大小</span></span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">long</span> size;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 哈希表大小掩码，用于计算索引值(sizemask == size - 1)</span></span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">long</span> sizemask;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 哈希表已有节点的数量</span></span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">long</span> used;</span><br><span class="line"></span><br><span class="line">&#125; dictht;</span><br></pre></td></tr></table></figure>
+
+<p>哈希表节点</p>
+<p>dict.h/dictht/dictEntry</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">dictEntry</span> &#123;</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 键</span></span><br><span class="line">    <span class="keyword">void</span> *key;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 值</span></span><br><span class="line">    <span class="keyword">union</span> &#123;</span><br><span class="line">        <span class="keyword">void</span> *val;</span><br><span class="line">        uint64_tu64;</span><br><span class="line">        int64_ts64;</span><br><span class="line">    &#125; v;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 指向下一个哈希表节点，形成链表</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">dictEntry</span> *<span class="title">next</span>;</span></span><br><span class="line">    </span><br><span class="line">&#125; dictEntry;</span><br></pre></td></tr></table></figure>
+
+<p>字典</p>
+<p>dict.h/dict</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">dict</span> &#123;</span></span><br><span class="line">	</span><br><span class="line">    <span class="comment">// 类型特定函数(保存用于操作特定类型键值对的函数)</span></span><br><span class="line">    dictType *type;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 私有数据(需要传给那些类型特定函数的可选参数)</span></span><br><span class="line">    <span class="keyword">void</span> *privdata;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 哈希表(包含两个项的数组)(除非rehash，否则只用ht[0])</span></span><br><span class="line">    dictht ht[<span class="number">2</span>];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// rehash索引</span></span><br><span class="line">    <span class="comment">// 当rehash不在进行时，值为-1</span></span><br><span class="line">    <span class="keyword">int</span> rehashidx;</span><br><span class="line">    </span><br><span class="line">&#125; dict;</span><br></pre></td></tr></table></figure>
+
+<p>redis在添加新的键值对时，会计算哈希值和索引值，然后再根据索引值插入。</p>
+<p>hash = dict -&gt; type -&gt; hashFunction(key);</p>
+<p>index = hash &amp; dict-&gt;hx[x].sizemask</p>
+<p>hashFunction(key)使用的算法是Murmurhash2</p>
+<p>哈希冲突：</p>
+<p>类似于java中的ConcurrentHashMap，采用拉链法，新值永远放在链表头部</p>
+<p>rehash步骤：</p>
+<ol>
+<li><p>为ht[1]分配空间，大小取决于ht[0].used的值</p>
+</li>
+<li><p>将保存在ht[0]中的所有键值对rehash到ht[1]上</p>
+</li>
+<li><p>ht[0]包含的所有键值对迁移完之后释放ht[0]，将ht[1]设置为ht[0]，并在ht[1]创建一个空白哈希表，为下次rehash做准备</p>
+</li>
+</ol>
+<p>redis是单线程，数据量过大会导致服务一段时间内停止服务，所以采用的是渐进式rehash</p>
+<p>渐进式rehash步骤：</p>
+<pre><code>1. 为ht[1]分配空间，大小取决于ht[0].used的值
+ 2. 字段中维持一个索引计数器变量rehashidx，并将它的值设置为0，表示rehash工作正式开始
+ 3. rehash期间，每次对字典的crud都会将ht[0]的键值对rehash到ht[1]，工作完成后rehashidx++
+ 4. 全部完成之后rehashidx = -1，表示rehash操作完成</code></pre><p>在这期间所有的crud都会在2个哈希表上进行，先ht[0]，没找到就ht[1]，新增操作会一律保存在ht[1]上，保证ht[0]的size只减不增，直至变成空表</p>
+<p>​    </p>
+<p>回到最初的问题，和java的ConcurrentHashMap有何区别</p>
+<p>redis是单线程渐进式</p>
+<p>ConcurrentHashMap是多线程协同扩容</p>
+<p>扩容速度：平均来说ConcurrentHashMap更快</p>
+<p>读：没啥区别</p>
+<p>写：ConcurrentHashMap可能会去帮着扩容，平均来说redis更快</p>
+<p>删：没啥区别</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/07/26/redis字典学习笔记/" data-id="cjykb52u20003e0ij7ulrdw2l" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/笔记-redis/">笔记 redis</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-面试题总结2" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/07/23/面试题总结2/" class="article-date">
@@ -145,7 +230,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/23/面试题总结2/" data-id="cjyhh4i8o0006ocijtmj5qhs8" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/23/面试题总结2/" data-id="cjykb52uc0009e0ijyww9c471" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
@@ -275,7 +360,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/19/dubbo实现步骤/" data-id="cjyhh4i7b0000ocijrusv9ozo" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/19/dubbo实现步骤/" data-id="cjykb52tw0001e0ijnyzbg7g7" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
@@ -354,7 +439,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/18/eureka实现步骤/" data-id="cjyhh4i8r0008ocijtip5bcww" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/18/eureka实现步骤/" data-id="cjykb52uf000be0ijeezwj0ju" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
@@ -455,7 +540,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/JDK动态代理源码解析/" data-id="cjyhh4i8k0004ocijr6jodq02" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/17/JDK动态代理源码解析/" data-id="cjykb52to0000e0ij6htm2di0" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li></ul>
@@ -531,7 +616,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjyhh4i8h0003ocij5rinnzq9" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjykb52u50004e0ijkia1xdqs" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
@@ -578,7 +663,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/16/面试题总结/" data-id="cjyhh4i90000bocijgkvtxyc9" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/16/面试题总结/" data-id="cjykb52ua0008e0ij5uxnfjio" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
@@ -655,7 +740,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/16/feign实现步骤/" data-id="cjyhh4i8u0009ocijdq33f1l1" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/16/feign实现步骤/" data-id="cjykb52u70005e0ij3pb3ry10" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li></ul>
@@ -680,7 +765,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/笔记-redis/">笔记 redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
     </div>
   </div>
 
@@ -690,7 +775,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/debug一时爽，一直debug一直爽/" style="font-size: 10px;">debug一时爽，一直debug一直爽</a> <a href="/tags/feign-源码-调用链/" style="font-size: 10px;">feign 源码 调用链</a> <a href="/tags/源码-调用链/" style="font-size: 20px;">源码 调用链</a> <a href="/tags/面试题/" style="font-size: 15px;">面试题</a>
+      <a href="/tags/debug一时爽，一直debug一直爽/" style="font-size: 10px;">debug一时爽，一直debug一直爽</a> <a href="/tags/feign-源码-调用链/" style="font-size: 10px;">feign 源码 调用链</a> <a href="/tags/源码-调用链/" style="font-size: 20px;">源码 调用链</a> <a href="/tags/笔记-redis/" style="font-size: 10px;">笔记 redis</a> <a href="/tags/面试题/" style="font-size: 15px;">面试题</a>
     </div>
   </div>
 
@@ -712,6 +797,10 @@
       <ul>
         
           <li>
+            <a href="/2019/07/26/redis字典学习笔记/">redis字典学习笔记</a>
+          </li>
+        
+          <li>
             <a href="/2019/07/23/面试题总结2/">面试题总结2</a>
           </li>
         
@@ -725,10 +814,6 @@
         
           <li>
             <a href="/2019/07/17/JDK动态代理源码解析/">JDK动态代理源码解析</a>
-          </li>
-        
-          <li>
-            <a href="/2019/07/17/Transactional实现步骤/">Transactional实现步骤</a>
           </li>
         
       </ul>

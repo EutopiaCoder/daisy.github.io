@@ -62,6 +62,136 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-redis持久化学习笔记" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/07/28/redis持久化学习笔记/" class="article-date">
+  <time datetime="2019-07-28T15:32:09.000Z" itemprop="datePublished">2019-07-28</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/07/28/redis持久化学习笔记/">redis持久化学习笔记</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>redis老生常谈的两个问题</p>
+<p>RDB文件是经过压缩的二进制文件，可以来回切换为数据库状态</p>
+<p>(rdbSave &lt;-&gt; rdbLoad)</p>
+<p>RDB文件保存在硬盘里，所以即使进程退出，也可以还原数据库状态</p>
+<p>创建与载入：</p>
+<p>创建：两个命令 SAVE BGSAVE</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">redis&gt; SAVE <span class="comment">//阻塞redis服务器进程</span></span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">redis&gt; BGSAVE <span class="comment">//派生子进程，由子进程创建RDB文件</span></span><br><span class="line">Background saving started</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">def SAVE():</span><br><span class="line">	rdbSave()</span><br><span class="line">def BGSAVE():</span><br><span class="line">	#创建子线程</span><br><span class="line">	pid = fork()</span><br><span class="line">    <span class="keyword">if</span> pid == <span class="number">0</span>:</span><br><span class="line">        rdbSave();</span><br><span class="line">		signal_parent() <span class="comment">//向父进程发送信号</span></span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span> pid &gt; <span class="number">0</span>:</span><br><span class="line">		handle_request_and_wait_signal() <span class="comment">//父进程继续处理命令请求，通过轮询等待子进程的信号</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">		handle_fork_error()</span><br></pre></td></tr></table></figure>
+
+<p>载入：</p>
+<p>只要检测到RDB文件，服务器启动时自动执行</p>
+<p>AOF优先级比RDB高，只有AOF处于关闭状态服务器才会使用RDF文件还愿数据库</p>
+<p>BGSAVE虽说不是阻塞的，但在BGSAVE执行期间，客户端的SAVE和BGSAVE会被拒绝防止产生竞争状态</p>
+<p>RDB载入期间，服务器阻塞</p>
+<p>可以通过设置save选项让服务器每隔一段时间自动执行一次BGSAVE</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//满足以下三个条件任意一个，BGSAVE就会被执行</span></span><br><span class="line"><span class="comment">//以下条件也是redis的默认设置条件</span></span><br><span class="line">save <span class="number">900</span> <span class="number">1</span> <span class="comment">// 服务器900秒内，对数据库进行了至少1次修改</span></span><br><span class="line">save <span class="number">300</span> <span class="number">10</span> <span class="comment">// 服务器300秒内，对数据库进行了至少10次修改</span></span><br><span class="line">save <span class="number">60</span> <span class="number">10000</span> <span class="comment">// 服务器60秒内，对数据库进行了至少10000次修改</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">redisServer</span> &#123;</span></span><br><span class="line">    <span class="comment">//记录了保存条件的数组</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">saveparam</span> *<span class="title">saveparams</span>;</span></span><br><span class="line">    <span class="comment">//修改计时器</span></span><br><span class="line">    <span class="comment">//记录了距离上一次成功执行SAVE或者BGSAVE之后</span></span><br><span class="line">    <span class="comment">//服务器对数据库状态进行了多少次修改</span></span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">long</span> dirty;</span><br><span class="line">    <span class="comment">//上一次执行保存的时间</span></span><br><span class="line">    <span class="comment">//UNIX时间戳，记录了上一次SAVE或者BGSAVE的时间</span></span><br><span class="line">    <span class="keyword">time_t</span> lastsave;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">saveparam</span> &#123;</span></span><br><span class="line">    <span class="comment">//秒数</span></span><br><span class="line">    <span class="keyword">time_t</span> seconds;</span><br><span class="line">    <span class="comment">//修改数</span></span><br><span class="line">    <span class="keyword">int</span> changes;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>example:</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">redis &gt; <span class="built_in">set</span> message <span class="string">"hello"</span> </span><br><span class="line">OK   (dirty++)</span><br><span class="line"><span class="comment">//SADD : 将一个或者多个value保存到key中</span></span><br><span class="line">redis &gt; SADD database Redis MongoDB MariaDB </span><br><span class="line">(integer) <span class="number">3</span> (dirty+=<span class="number">3</span>)</span><br></pre></td></tr></table></figure>
+
+<p>检查保存条件是否满足：</p>
+<p>每隔100毫秒执行一次函数serverCron函数</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">def serverCron() :</span><br><span class="line"></span><br><span class="line">	<span class="comment">//遍历所有保存条件</span></span><br><span class="line">	<span class="keyword">for</span> saveparam in server.saveparams:</span><br><span class="line">		<span class="comment">//距离上次操作还有多少秒</span></span><br><span class="line">		save_interval = unixtime_now() - server.lastsave</span><br><span class="line">		</span><br><span class="line">		<span class="comment">//如果数据库修改次数超过设置的次数</span></span><br><span class="line">		<span class="comment">//且距离上次保存的时间超过条件所设置的次数</span></span><br><span class="line">		<span class="comment">//则执行保存操作</span></span><br><span class="line">		<span class="keyword">if</span> server.dirty &gt;= saveparam.changes </span><br><span class="line">			<span class="keyword">and</span> save_interval &gt; saveparam.seconds:</span><br><span class="line">				BGSAVE()</span><br></pre></td></tr></table></figure>
+
+<p>RDB文件结构：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">REDIS | db_version | databases | EOF | check_sum</span><br></pre></td></tr></table></figure>
+
+<p>REDIS ： 类似java中class文件开头的CAFEBABE 魔数</p>
+<p>db_version ： RDB文件的版本号</p>
+<p>databases ： 值</p>
+<p>EOF ： 标识符，读取到这里代表所有键值对都载入完毕</p>
+<p>check_sum ：根据前四者的部分计算得出，用于校验数据完整性</p>
+<p>重点说下databases，databases是一个类似数组的结构</p>
+<p>若只有1号数据库和3号数据库为非空，databases结构为</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">database <span class="number">0</span> | database <span class="number">3</span></span><br></pre></td></tr></table></figure>
+
+<p>database文件结构</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECTED | db_number | key_value_pairs</span><br></pre></td></tr></table></figure>
+
+<p>SELECTED  ： 标识符，代表要开始载入了</p>
+<p>db_number ： 数据库号</p>
+<p>key_value_pairs ：字面意思</p>
+<p>结构为 </p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(若有过期时间)（EXPIRETIME_MS | ms | ） TYPE | key | value</span><br></pre></td></tr></table></figure>
+
+<p>EXPIRETIME_MS ：标识符，代表要开始载入过期时间了</p>
+<p>ms ： 过期时长</p>
+<p>TYPE ：数据类型</p>
+<hr>
+<p>不同于RDB根据save配置文件100ms执行一次serverCron函数</p>
+<p>AOP是通过保存redis服务器所执行的写命令来保存数据库状态的</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">client —--—--------》 server -------------------》 AOF文件</span><br><span class="line">		发送写命令				保存被执行的写命令</span><br></pre></td></tr></table></figure>
+
+<p>执行什么命令，什么就会被写在AOF文件中</p>
+<p>AOF实现分为命令追加(append)，文件写入(write)和文件同步(sync)三部分</p>
+<p>命令追加：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">redisServer</span> &#123;</span></span><br><span class="line">    <span class="comment">// AOF缓冲区</span></span><br><span class="line">    sds aof_buf;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>为何叫append，可以类比java中的StringBuffer，每次执行完客户端的命令后，将此命令追加到aof_buf的末尾处</p>
+<p>文件写入：</p>
+<p>redis服务器就是个死循环</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">def eventLoop():</span><br><span class="line"></span><br><span class="line">	<span class="keyword">while</span> <span class="literal">true</span>:</span><br><span class="line">		<span class="comment">// 处理文件事件，接受命令请求以及发送命令回复</span></span><br><span class="line">		<span class="comment">// 处理命令请求时可能有新内容追加到aof_buf缓冲区中</span></span><br><span class="line">		processFileEvents()</span><br><span class="line">            </span><br><span class="line">        <span class="comment">// 处理时间事件</span></span><br><span class="line">        processTimeEvents()</span><br><span class="line">            </span><br><span class="line">        <span class="comment">// 考虑是否要把aof_buf的内容保存到AOF文件中</span></span><br><span class="line">        flushAppendOnlyFile();</span><br></pre></td></tr></table></figure>
+
+<p>flushAppendOnlyFile函数由服务器配置的appendfsync选项的值决定，包括3种</p>
+<p>always：将aof_buf所有内容写入并同步到AOF文件中</p>
+<p>everysec(默认)：将aof_buf所有内容写入到AOF文件中</p>
+<p>如果上次同步的事件距离现在超过1秒钟，那么再对AOF文件进行同步</p>
+<p>而且这个同步操作是由一个线程专门负责执行的</p>
+<p>no：将aof_buf所有内容写入到AOF文件中</p>
+<p>但并不对AOF文件进行同步，何时同步由操作系统决定</p>
+<p>写入与同步：</p>
+<p>为了提升写入效率，调用write函数先保存在内存缓冲区内，等到缓冲区填满后或超过的指定时间，再将缓冲区的数据写入到磁盘里面</p>
+<p>（es就是每隔5s写入到磁盘中，但也有概率丢失5s的数据）</p>
+<p>AOF文件的载入与数据还原</p>
+<p>步骤：</p>
+<pre><code>1. 创建一个不带网络连接的伪客户端（并不需要网络连接）
+ 2. 从AOF文件分析并读取出一条写命令
+ 3. 使用伪客户端执行被读的写命令
+ 4. 一直循环执行步骤2和步骤3，直到AOF文件中所有写命令都处理完为止</code></pre><p>AOF重写</p>
+<p>创建新的AOF文件替代现有的AOF文件以减少体积</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">def aof_rewrite(new_aof_file_name):</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 创建新的AOF文件</span></span><br><span class="line">	f = createfile(new_aof_file_name)</span><br><span class="line">        </span><br><span class="line">    <span class="comment">// 遍历数据库</span></span><br><span class="line">    <span class="keyword">for</span> db in redisServer.db:</span><br><span class="line">		<span class="comment">// 忽略空数据库</span></span><br><span class="line">		<span class="keyword">if</span> db.is_empty(): <span class="keyword">continue</span></span><br><span class="line">        <span class="comment">// 写入select命令，指定数据库号</span></span><br><span class="line">        f.write_command(<span class="string">"SELECT"</span> + db.id)</span><br><span class="line">        <span class="comment">// 遍历数据库中的所有键</span></span><br><span class="line">        <span class="keyword">for</span> key in db:</span><br><span class="line">			<span class="comment">// 忽略已过期的key</span></span><br><span class="line">			<span class="keyword">if</span> key.is_expired(): <span class="keyword">continue</span></span><br><span class="line">                </span><br><span class="line">            <span class="comment">// 根据key的类型对key进行重写</span></span><br><span class="line">            <span class="keyword">if</span> key.type == String:</span><br><span class="line">				rewrite_string(key) <span class="comment">// 方法实现省略</span></span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> .......</span><br><span class="line">                <span class="comment">// 省略</span></span><br><span class="line">            .....</span><br><span class="line">                </span><br><span class="line">            <span class="comment">// 如果key有过期时间，过期时间也要重写</span></span><br><span class="line">            <span class="keyword">if</span> key.have_expire_time</span><br><span class="line">            	rewrite_expire_time(key)</span><br><span class="line">    <span class="comment">// 写入完毕，关闭文件</span></span><br><span class="line">    f.close()</span><br></pre></td></tr></table></figure>
+
+<p>AOF后台重写（BEREWRITEAOF）</p>
+<p>因为要处理大量的写操作，会长时间阻塞redis服务器，所以redis会放到子进程里执行，但子进程会有数据不一致的问题。</p>
+<p>解决方案：redis设置了一个AOF重写缓冲区，在创建子线程后开始使用。</p>
+<p>在这期间redis每完成一个写命令之后，会同时把写命令发送给AOF缓冲区和AOF重写缓冲区。</p>
+<p>AOF重写完成后会给父线程发送信号，把AOF重写缓冲区内容写到AOF文件中，并覆盖现有的AOF文件。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/07/28/redis持久化学习笔记/" data-id="cjyn9niso0005e8ijkb7pqtbd" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/redis-学习笔记/">redis 学习笔记</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-redis字典学习笔记" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/07/26/redis字典学习笔记/" class="article-date">
@@ -135,7 +265,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/26/redis字典学习笔记/" data-id="cjykb52u20003e0ij7ulrdw2l" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/26/redis字典学习笔记/" data-id="cjyn9nisj0004e8ijb88sydx1" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/笔记-redis/">笔记 redis</a></li></ul>
@@ -230,7 +360,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/23/面试题总结2/" data-id="cjykb52uc0009e0ijyww9c471" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/23/面试题总结2/" data-id="cjyn9niv0000le8ijkumkj6tm" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
@@ -360,7 +490,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/19/dubbo实现步骤/" data-id="cjykb52tw0001e0ijnyzbg7g7" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/19/dubbo实现步骤/" data-id="cjyn9nisb0003e8ijfjw6g2lb" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
@@ -439,7 +569,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/18/eureka实现步骤/" data-id="cjykb52uf000be0ijeezwj0ju" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/18/eureka实现步骤/" data-id="cjyn9niuj000ie8ij57jvbanm" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
@@ -540,7 +670,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/JDK动态代理源码解析/" data-id="cjykb52to0000e0ij6htm2di0" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/17/JDK动态代理源码解析/" data-id="cjyn9niru0001e8ijksavbwt4" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li></ul>
@@ -616,7 +746,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjykb52u50004e0ijkia1xdqs" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjyn9nirk0000e8ij8c5dk2qb" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
@@ -663,7 +793,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/16/面试题总结/" data-id="cjykb52ua0008e0ij5uxnfjio" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/16/面试题总结/" data-id="cjyn9niur000je8ij59dbelq2" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
@@ -740,7 +870,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/16/feign实现步骤/" data-id="cjykb52u70005e0ij3pb3ry10" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/16/feign实现步骤/" data-id="cjyn9nisw0008e8ijk8b0qi9d" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li></ul>
@@ -765,7 +895,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/笔记-redis/">笔记 redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis-学习笔记/">redis 学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/笔记-redis/">笔记 redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
     </div>
   </div>
 
@@ -775,7 +905,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/debug一时爽，一直debug一直爽/" style="font-size: 10px;">debug一时爽，一直debug一直爽</a> <a href="/tags/feign-源码-调用链/" style="font-size: 10px;">feign 源码 调用链</a> <a href="/tags/源码-调用链/" style="font-size: 20px;">源码 调用链</a> <a href="/tags/笔记-redis/" style="font-size: 10px;">笔记 redis</a> <a href="/tags/面试题/" style="font-size: 15px;">面试题</a>
+      <a href="/tags/debug一时爽，一直debug一直爽/" style="font-size: 10px;">debug一时爽，一直debug一直爽</a> <a href="/tags/feign-源码-调用链/" style="font-size: 10px;">feign 源码 调用链</a> <a href="/tags/redis-学习笔记/" style="font-size: 10px;">redis 学习笔记</a> <a href="/tags/源码-调用链/" style="font-size: 20px;">源码 调用链</a> <a href="/tags/笔记-redis/" style="font-size: 10px;">笔记 redis</a> <a href="/tags/面试题/" style="font-size: 15px;">面试题</a>
     </div>
   </div>
 
@@ -797,6 +927,10 @@
       <ul>
         
           <li>
+            <a href="/2019/07/28/redis持久化学习笔记/">redis持久化学习笔记</a>
+          </li>
+        
+          <li>
             <a href="/2019/07/26/redis字典学习笔记/">redis字典学习笔记</a>
           </li>
         
@@ -810,10 +944,6 @@
         
           <li>
             <a href="/2019/07/18/eureka实现步骤/">eureka实现步骤</a>
-          </li>
-        
-          <li>
-            <a href="/2019/07/17/JDK动态代理源码解析/">JDK动态代理源码解析</a>
           </li>
         
       </ul>

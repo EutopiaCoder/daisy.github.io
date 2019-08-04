@@ -62,6 +62,156 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-redis主从笔记" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/04/redis主从笔记/" class="article-date">
+  <time datetime="2019-08-04T15:16:36.000Z" itemprop="datePublished">2019-08-04</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/04/redis主从笔记/">redis主从笔记</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#本地建了俩redis实例分别为<span class="number">6379</span>(主)和<span class="number">6380</span>(从)</span><br><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6380</span>&gt; SLAVEOF <span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span> <span class="number">6379</span></span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
+
+<p>PSYNC命令具有完整重同步和部分重同步两种模式：</p>
+<p>完整重同步：处理初次复制情况，主服务器创建并发送RDB文件和缓冲区的写命令</p>
+<p>部分重同步：处理断线后重复制情况，从服务器重连后如果条件允许，主服务器可以将断开期间所有的写命令发送给从服务器。</p>
+<p>部分重同步的实现：</p>
+<ol>
+<li>主从服务器分别维护复制偏移量，处于一直状态的时候总是相同的</li>
+<li>主服务器维护一个叫复制挤压缓冲区的固定长度FIFO的队列，命令传播给从服务器的时候还会写入复制积压缓冲区，保存着偏移量-字节量的值对</li>
+<li>从服务器重连并发送PSYNC的时候，根据复制偏移量判断，如果从服务器偏移量之后的数据还存在缓冲区中，执行部分重同步，反之完整重同步。</li>
+</ol>
+<p>（缓冲区大小公式 2 * second * write_size_per_second）</p>
+<ol start="4">
+<li>每个redis服务器都会有自己的运行ID</li>
+<li>初次复制时，主服务器会把ID发给从服务器，从服务器会保存起来</li>
+<li>重连时从服务器会发送ID给主服务器，相同则继续尝试部分重同步（发生在检查复制挤压缓冲区之前），反之完整重同步</li>
+</ol>
+<p>复制步骤：</p>
+<ol>
+<li><p>从服务器保存主服务器的地址和端口</p>
+</li>
+<li><p>建立套接字连接，相当于把从服务器看成主服务器的客户端来对待</p>
+</li>
+<li><p>向从服务器发送一个PING，检验套接字和主服务器是否正常</p>
+</li>
+<li><p>如果从服务器设置了masterauth则进行身份验证，反之跳过。</p>
+<p>从服务器发送AUTH XXXXXX，和主服务器的requirepass对比</p>
+</li>
+<li><p>主服务器保存从服务器发送的端口信息（唯一作用就是打印出来</p>
+</li>
+<li><p>PSYNC</p>
+</li>
+<li><p>开始命令传播</p>
+</li>
+</ol>
+<p>心跳检测：</p>
+<p>命令传播期间从服务器会每秒一次像主服务器发送一次ACK，作用有3点</p>
+<ol>
+<li><p>检测主从服务器网络连接状态</p>
+</li>
+<li><p>辅助实现min-slaves </p>
+<p>min-slaves-to-write  3</p>
+<p>min-slaves-max-lag 10</p>
+<p>从服务器少于3个或者3个从服务器延迟都大于10秒则拒绝执行写命令</p>
+</li>
+<li><p>检测命令丢失</p>
+<p>可以理解为没有断线情况下的一种部分重同步</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/04/redis主从笔记/" data-id="cjyx6gmlo0003t8ijrn2q9gdp" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/主从-redis-笔记/">主从 redis 笔记</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-redis字符串学习笔记" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/07/31/redis字符串学习笔记/" class="article-date">
+  <time datetime="2019-07-31T13:29:41.000Z" itemprop="datePublished">2019-07-31</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/07/31/redis字符串学习笔记/">redis学习笔记</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>SDS</p>
+<p>set msg “hello world”  key是字符串对象，底层是一个保存着msg的SDS，value同理</p>
+<p>rpush fruits “apple” “banana” “cherry” value底层是3个SDS，分别保存apple,banana,cherry</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sdshdr</span> &#123;</span></span><br><span class="line">    <span class="comment">// buf数组中已使用的数量</span></span><br><span class="line">	<span class="keyword">int</span> len;</span><br><span class="line">    <span class="comment">// buf数组中未使用的数量</span></span><br><span class="line">    <span class="keyword">int</span> <span class="built_in">free</span>;</span><br><span class="line">    <span class="comment">//字节数组</span></span><br><span class="line">    <span class="keyword">char</span> buf[];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>SDS比起C字符串拥有以下优点：</p>
+<ol>
+<li>O(1)复杂度获取字符串长度</li>
+<li>杜绝缓冲区溢出</li>
+<li>减少修改字符串长度所需的内存重分配次数</li>
+<li>二进制安全</li>
+<li>兼容部分C字符串函数</li>
+</ol>
+<hr>
+<p>跳表</p>
+<p>redis.h/zskiplistNode 跳跃表节点</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistNode</span> &#123;</span></span><br><span class="line">	<span class="comment">//层</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistLevel</span> &#123;</span></span><br><span class="line">        <span class="comment">//前进指针</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistNode</span> *<span class="title">forward</span>;</span></span><br><span class="line">        </span><br><span class="line">        <span class="comment">//跨度</span></span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span> span;</span><br><span class="line">        </span><br><span class="line">    &#125; level[];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//后退指针</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistNode</span> *<span class="title">backward</span>;</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment">//分值</span></span><br><span class="line">    <span class="keyword">double</span> score;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//成员对象</span></span><br><span class="line">    robj *obj;</span><br><span class="line">    </span><br><span class="line">&#125; zskiplistNode;</span><br></pre></td></tr></table></figure>
+
+<p>为什么redis使用跳表而不是平衡树</p>
+<p>贴一下官方文档解释</p>
+<p>There are a few reasons:</p>
+<p>1) They are not very memory intensive. It’s up to you basically. Changing parameters about the probability of a node to have a given number of levels will make then less memory intensive than btrees.</p>
+<p>2) A sorted set is often target of many ZRANGE or ZREVRANGE operations, that is, traversing the skip list as a linked list. With this operation the cache locality of skip lists is at least as good as with other kind of balanced trees.</p>
+<p>3) They are simpler to implement, debug, and so forth. For instance thanks to the skip list simplicity I received a patch (already in Redis master) with augmented skip lists implementing ZRANK in O(log(N)). It required little changes to the code.</p>
+<p>实现简单，范围查找效率高，内存占用更灵活</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/07/31/redis字符串学习笔记/" data-id="cjyx6gmlo0005t8ij5d5aojag" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/redis-学习笔记/">redis 学习笔记</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-redis持久化学习笔记" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/07/28/redis持久化学习笔记/" class="article-date">
@@ -180,7 +330,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/28/redis持久化学习笔记/" data-id="cjyn9niso0005e8ijkb7pqtbd" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/28/redis持久化学习笔记/" data-id="cjyx6gmm8000gt8ijjd1li6ek" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/redis-学习笔记/">redis 学习笔记</a></li></ul>
@@ -265,7 +415,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/26/redis字典学习笔记/" data-id="cjyn9nisj0004e8ijb88sydx1" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/26/redis字典学习笔记/" data-id="cjyx6gmly0009t8ijctb0aki5" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/笔记-redis/">笔记 redis</a></li></ul>
@@ -360,7 +510,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/23/面试题总结2/" data-id="cjyn9niv0000le8ijkumkj6tm" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/23/面试题总结2/" data-id="cjyx6gmly000et8ijbjjxi1q3" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
@@ -490,7 +640,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/19/dubbo实现步骤/" data-id="cjyn9nisb0003e8ijfjw6g2lb" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/19/dubbo实现步骤/" data-id="cjyx6gmlo0008t8ijs21747g9" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
@@ -569,7 +719,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/18/eureka实现步骤/" data-id="cjyn9niuj000ie8ij57jvbanm" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/18/eureka实现步骤/" data-id="cjyx6gmlo0004t8ijbx0fqug6" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
@@ -670,7 +820,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/JDK动态代理源码解析/" data-id="cjyn9niru0001e8ijksavbwt4" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/17/JDK动态代理源码解析/" data-id="cjyx6gml40000t8ijuwwb9b2p" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li></ul>
@@ -746,7 +896,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjyn9nirk0000e8ij8c5dk2qb" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjyx6gmle0001t8ijx3188ty6" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
@@ -793,7 +943,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/16/面试题总结/" data-id="cjyn9niur000je8ij59dbelq2" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/16/面试题总结/" data-id="cjyx6gmly000ct8ij9lgrmuop" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
@@ -805,84 +955,12 @@
 
 
   
-    <article id="post-feign实现步骤" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/07/16/feign实现步骤/" class="article-date">
-  <time datetime="2019-07-16T09:38:51.000Z" itemprop="datePublished">2019-07-16</time>
-</a>
+
+
+  <nav id="page-nav">
     
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/07/16/feign实现步骤/">feign实现步骤</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>记录一下feign的实现原理，直接把流程干货提炼出来方便以后回忆。</p>
-<h4 id="启动部分"><a href="#启动部分" class="headerlink" title="启动部分"></a>启动部分</h4><h5 id="初始化beanDefinite"><a href="#初始化beanDefinite" class="headerlink" title="初始化beanDefinite"></a>初始化beanDefinite</h5><p>1.启动springboot初始化IOC容器，调用SpringApplication.refreshContext;</p>
-<p>2.refresh()的invokeBeanFactoryPostProcessors，实例化所有注册了BeanFactoryPostProcessor的bean;</p>
-<p>3.invokeBeanDefinitionRegistryPostProcessors，遍历所有currentRegistryProcessors，执行postProcessBeanDefinitionRegistry方法。</p>
-<p>4.因为@EnableFeignClients注入了FeignClientsRegistrar，FeignClientsRegistrar实现了ImportBeanDefinitionRegistrar，到这里会执行registerBeanDefinitions。</p>
-<p>5.registerBeanDefinitions包含2个方法，registerDefaultConfiguration和registerFeignClients。</p>
-<p>6.registerDefaultConfiguration先再判断一次启动类是否有@EnableFeignClients，然后注册FeignClientSpecification。</p>
-<p>7.registerFeignClients用于扫描所有使用了@FeignClient的类，将注解的信息全部取出，通过BeanDefinitionBuilder组合为BeanDefinition，注入到IOC容器中</p>
-<h5 id="实例化bean"><a href="#实例化bean" class="headerlink" title="实例化bean"></a>实例化bean</h5><p>1.refresh()的finishBeanFactoryInitialization(beanFactory)，实例化bean。</p>
-<p>（我自己写了个DemoController，@Autowired了一个@FeignClient修饰的DemoService，调用链是先实例化DemoController，发现要注入DemoService调用了DepencyDescriptor.resloveCandidate方法，至于顺序后续再研究下）</p>
-<p>2.DemoService的beanFactory是FeignClientBeanFactory，会调用其getObject方法。</p>
-<p>3.先拼接url，如服务端的application.name为nagato，url为<a href="http://nagato。" target="_blank" rel="noopener">http://nagato。</a></p>
-<p>4.调用loadBalance方法</p>
-<p>5.若有hystrix熔断器逻辑则进行配置。</p>
-<p>6.最后到ReflectiveFeign调用newInstance并返回到容器中，其实就是jdk的动态代理。</p>
-<hr>
-<h4 id="调用部分"><a href="#调用部分" class="headerlink" title="调用部分"></a>调用部分</h4><p>1.调用DemoService代理类后进入invoke方法，SynchronousMethodHandler的invoke方法中首先create一个HTTP模板RequestTemplate(GET /jwt/hello HTTP/1.1)。</p>
-<p>2.克隆一个Retryer重试Bean，进入executeAndDecode方法。</p>
-<p>3.之前拼接了一个url，再次拼接为(GET <a href="http://nagato/jwt/hello" target="_blank" rel="noopener">http://nagato/jwt/hello</a> HTTP/1.1)</p>
-<p>4.调用client发送请求并解析返回结果，这里的client非常关键。</p>
-<p>（查看FeignAutoConfiguration可以发现@ConditionalOnClass，如果pom里有feign-httpclient，则使用httpclient调用，如果pom里有feign-okhttp，则使用okhttp调用，我2个都没导入，这里用的client是LoadBalancerFeignClient）</p>
-<p>5.LoadBalancerFeignClient的executeWithLoadBalancer方法，分为两个步骤，command.submit实现负载均衡，subimt传参为ServerOperation匿名类，内部实现了call，http调用在这里实现。</p>
-<p>6.call往里研究，跟踪到convertAndSend这一步，本质还是HttpURLConnection(我这次调用的url为<a href="http://join-PC:9001/jwt/hello)。" target="_blank" rel="noopener">http://join-PC:9001/jwt/hello)。</a></p>
-<p>7.刻在DNA里的out.write(request.body())</p>
-<p>7.得到返回的报文，decode处理后作为结果返回。</p>
-<p>8.进入InvocableHandlerMethod的invoke方法，回到原来调用DemoService方法，继续执行。</p>
-<hr>
-<p><code>HttpURLConnection connection = (HttpURLConnection) new URL(&quot;http://join-PC:9000/jwt/hello&quot;).openConnection();</code></p>
-<p><code>connection.setDoOutput(true);connection.setConnectTimeout(1000);connection.setReadTimeout(1000);</code></p>
-<p><code>connection.setAllowUserInteraction(false);</code></p>
-<p><code>connection.setInstanceFollowRedirects(true);</code></p>
-<p><code>connection.setRequestMethod(&quot;GET&quot;);</code></p>
-<p><code>connection.addRequestProperty(&quot;Accept&quot;, &quot;*/*&quot;);</code></p>
-<p><code>InputStream stream = connection.getInputStream();</code></p>
-<p><code>BufferedReader reader = new BufferedReader(new InputStreamReader(stream));</code></p>
-<p><code>String line;while ((line = reader.readLine()) != null) {    System.out.println(line);}</code></p>
-<p><code>stream.close();</code></p>
-<hr>
-<p>还有好多细节没有搞懂，比如这个InvocableHandlerMethod，之后继续分析。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/16/feign实现步骤/" data-id="cjyn9nisw0008e8ijk8b0qi9d" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+  </nav>
 
 </section>
         
@@ -895,7 +973,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis-学习笔记/">redis 学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/笔记-redis/">笔记 redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis-学习笔记/">redis 学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/主从-redis-笔记/">主从 redis 笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/笔记-redis/">笔记 redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
     </div>
   </div>
 
@@ -905,7 +983,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/debug一时爽，一直debug一直爽/" style="font-size: 10px;">debug一时爽，一直debug一直爽</a> <a href="/tags/feign-源码-调用链/" style="font-size: 10px;">feign 源码 调用链</a> <a href="/tags/redis-学习笔记/" style="font-size: 10px;">redis 学习笔记</a> <a href="/tags/源码-调用链/" style="font-size: 20px;">源码 调用链</a> <a href="/tags/笔记-redis/" style="font-size: 10px;">笔记 redis</a> <a href="/tags/面试题/" style="font-size: 15px;">面试题</a>
+      <a href="/tags/debug一时爽，一直debug一直爽/" style="font-size: 10px;">debug一时爽，一直debug一直爽</a> <a href="/tags/feign-源码-调用链/" style="font-size: 10px;">feign 源码 调用链</a> <a href="/tags/redis-学习笔记/" style="font-size: 15px;">redis 学习笔记</a> <a href="/tags/主从-redis-笔记/" style="font-size: 10px;">主从 redis 笔记</a> <a href="/tags/源码-调用链/" style="font-size: 20px;">源码 调用链</a> <a href="/tags/笔记-redis/" style="font-size: 10px;">笔记 redis</a> <a href="/tags/面试题/" style="font-size: 15px;">面试题</a>
     </div>
   </div>
 
@@ -914,7 +992,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a></li></ul>
     </div>
   </div>
 
@@ -927,6 +1005,14 @@
       <ul>
         
           <li>
+            <a href="/2019/08/04/redis主从笔记/">redis主从笔记</a>
+          </li>
+        
+          <li>
+            <a href="/2019/07/31/redis字符串学习笔记/">redis学习笔记</a>
+          </li>
+        
+          <li>
             <a href="/2019/07/28/redis持久化学习笔记/">redis持久化学习笔记</a>
           </li>
         
@@ -936,14 +1022,6 @@
         
           <li>
             <a href="/2019/07/23/面试题总结2/">面试题总结2</a>
-          </li>
-        
-          <li>
-            <a href="/2019/07/19/dubbo实现步骤/">dubbo实现步骤</a>
-          </li>
-        
-          <li>
-            <a href="/2019/07/18/eureka实现步骤/">eureka实现步骤</a>
           </li>
         
       </ul>

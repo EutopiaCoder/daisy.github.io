@@ -5,11 +5,11 @@
   
 
   
-  <title>Archives: 2019 | 一个懒得改主题的码农</title>
+  <title>一个懒得改主题的码农</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta property="og:type" content="website">
 <meta property="og:title" content="一个懒得改主题的码农">
-<meta property="og:url" content="http://yoursite.com/archives/2019/index.html">
+<meta property="og:url" content="http://yoursite.com/page/2/index.html">
 <meta property="og:site_name" content="一个懒得改主题的码农">
 <meta property="og:locale" content="default">
 <meta name="twitter:card" content="summary">
@@ -62,213 +62,88 @@
       <div class="outer">
         <section id="main">
   
-  
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2019" class="archive-year">2019</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/08/04/redis主从笔记/" class="archive-article-date">
-  <time datetime="2019-08-04T15:16:36.000Z" itemprop="datePublished">Aug 4</time>
+    <article id="post-feign实现步骤" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/07/16/feign实现步骤/" class="article-date">
+  <time datetime="2019-07-16T09:38:51.000Z" itemprop="datePublished">2019-07-16</time>
 </a>
-      
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
   
     <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/08/04/redis主从笔记/">redis主从笔记</a>
+      <a class="article-title" href="/2019/07/16/feign实现步骤/">feign实现步骤</a>
     </h1>
   
 
-    </header>
-  </div>
-</article>
-  
+      </header>
     
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/07/31/redis字符串学习笔记/" class="archive-article-date">
-  <time datetime="2019-07-31T13:29:41.000Z" itemprop="datePublished">Jul 31</time>
-</a>
+    <div class="article-entry" itemprop="articleBody">
       
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/07/31/redis字符串学习笔记/">redis学习笔记</a>
-    </h1>
-  
+        <p>记录一下feign的实现原理，直接把流程干货提炼出来方便以后回忆。</p>
+<h4 id="启动部分"><a href="#启动部分" class="headerlink" title="启动部分"></a>启动部分</h4><h5 id="初始化beanDefinite"><a href="#初始化beanDefinite" class="headerlink" title="初始化beanDefinite"></a>初始化beanDefinite</h5><p>1.启动springboot初始化IOC容器，调用SpringApplication.refreshContext;</p>
+<p>2.refresh()的invokeBeanFactoryPostProcessors，实例化所有注册了BeanFactoryPostProcessor的bean;</p>
+<p>3.invokeBeanDefinitionRegistryPostProcessors，遍历所有currentRegistryProcessors，执行postProcessBeanDefinitionRegistry方法。</p>
+<p>4.因为@EnableFeignClients注入了FeignClientsRegistrar，FeignClientsRegistrar实现了ImportBeanDefinitionRegistrar，到这里会执行registerBeanDefinitions。</p>
+<p>5.registerBeanDefinitions包含2个方法，registerDefaultConfiguration和registerFeignClients。</p>
+<p>6.registerDefaultConfiguration先再判断一次启动类是否有@EnableFeignClients，然后注册FeignClientSpecification。</p>
+<p>7.registerFeignClients用于扫描所有使用了@FeignClient的类，将注解的信息全部取出，通过BeanDefinitionBuilder组合为BeanDefinition，注入到IOC容器中</p>
+<h5 id="实例化bean"><a href="#实例化bean" class="headerlink" title="实例化bean"></a>实例化bean</h5><p>1.refresh()的finishBeanFactoryInitialization(beanFactory)，实例化bean。</p>
+<p>（我自己写了个DemoController，@Autowired了一个@FeignClient修饰的DemoService，调用链是先实例化DemoController，发现要注入DemoService调用了DepencyDescriptor.resloveCandidate方法，至于顺序后续再研究下）</p>
+<p>2.DemoService的beanFactory是FeignClientBeanFactory，会调用其getObject方法。</p>
+<p>3.先拼接url，如服务端的application.name为nagato，url为<a href="http://nagato。" target="_blank" rel="noopener">http://nagato。</a></p>
+<p>4.调用loadBalance方法</p>
+<p>5.若有hystrix熔断器逻辑则进行配置。</p>
+<p>6.最后到ReflectiveFeign调用newInstance并返回到容器中，其实就是jdk的动态代理。</p>
+<hr>
+<h4 id="调用部分"><a href="#调用部分" class="headerlink" title="调用部分"></a>调用部分</h4><p>1.调用DemoService代理类后进入invoke方法，SynchronousMethodHandler的invoke方法中首先create一个HTTP模板RequestTemplate(GET /jwt/hello HTTP/1.1)。</p>
+<p>2.克隆一个Retryer重试Bean，进入executeAndDecode方法。</p>
+<p>3.之前拼接了一个url，再次拼接为(GET <a href="http://nagato/jwt/hello" target="_blank" rel="noopener">http://nagato/jwt/hello</a> HTTP/1.1)</p>
+<p>4.调用client发送请求并解析返回结果，这里的client非常关键。</p>
+<p>（查看FeignAutoConfiguration可以发现@ConditionalOnClass，如果pom里有feign-httpclient，则使用httpclient调用，如果pom里有feign-okhttp，则使用okhttp调用，我2个都没导入，这里用的client是LoadBalancerFeignClient）</p>
+<p>5.LoadBalancerFeignClient的executeWithLoadBalancer方法，分为两个步骤，command.submit实现负载均衡，subimt传参为ServerOperation匿名类，内部实现了call，http调用在这里实现。</p>
+<p>6.call往里研究，跟踪到convertAndSend这一步，本质还是HttpURLConnection(我这次调用的url为<a href="http://join-PC:9001/jwt/hello)。" target="_blank" rel="noopener">http://join-PC:9001/jwt/hello)。</a></p>
+<p>7.刻在DNA里的out.write(request.body())</p>
+<p>7.得到返回的报文，decode处理后作为结果返回。</p>
+<p>8.进入InvocableHandlerMethod的invoke方法，回到原来调用DemoService方法，继续执行。</p>
+<hr>
+<p><code>HttpURLConnection connection = (HttpURLConnection) new URL(&quot;http://join-PC:9000/jwt/hello&quot;).openConnection();</code></p>
+<p><code>connection.setDoOutput(true);connection.setConnectTimeout(1000);connection.setReadTimeout(1000);</code></p>
+<p><code>connection.setAllowUserInteraction(false);</code></p>
+<p><code>connection.setInstanceFollowRedirects(true);</code></p>
+<p><code>connection.setRequestMethod(&quot;GET&quot;);</code></p>
+<p><code>connection.addRequestProperty(&quot;Accept&quot;, &quot;*/*&quot;);</code></p>
+<p><code>InputStream stream = connection.getInputStream();</code></p>
+<p><code>BufferedReader reader = new BufferedReader(new InputStreamReader(stream));</code></p>
+<p><code>String line;while ((line = reader.readLine()) != null) {    System.out.println(line);}</code></p>
+<p><code>stream.close();</code></p>
+<hr>
+<p>还有好多细节没有搞懂，比如这个InvocableHandlerMethod，之后继续分析。</p>
 
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/07/28/redis持久化学习笔记/" class="archive-article-date">
-  <time datetime="2019-07-28T15:32:09.000Z" itemprop="datePublished">Jul 28</time>
-</a>
       
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/07/28/redis持久化学习笔记/">redis持久化学习笔记</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/07/26/redis字典学习笔记/" class="archive-article-date">
-  <time datetime="2019-07-26T14:26:30.000Z" itemprop="datePublished">Jul 26</time>
-</a>
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/07/16/feign实现步骤/" data-id="cjyx6gmms000tt8ijjcjkxfxn" class="article-share-link">Share</a>
       
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/07/26/redis字典学习笔记/">redis字典学习笔记</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/07/23/面试题总结2/" class="archive-article-date">
-  <time datetime="2019-07-23T08:20:24.000Z" itemprop="datePublished">Jul 23</time>
-</a>
       
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/07/23/面试题总结2/">面试题总结2</a>
-    </h1>
-  
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li></ul>
 
-    </header>
+    </footer>
   </div>
+  
 </article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/07/19/dubbo实现步骤/" class="archive-article-date">
-  <time datetime="2019-07-19T13:05:08.000Z" itemprop="datePublished">Jul 19</time>
-</a>
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/07/19/dubbo实现步骤/">dubbo实现步骤</a>
-    </h1>
-  
 
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/07/18/eureka实现步骤/" class="archive-article-date">
-  <time datetime="2019-07-18T07:33:53.000Z" itemprop="datePublished">Jul 18</time>
-</a>
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/07/18/eureka实现步骤/">eureka实现步骤</a>
-    </h1>
-  
 
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/07/17/JDK动态代理源码解析/" class="archive-article-date">
-  <time datetime="2019-07-17T15:02:49.000Z" itemprop="datePublished">Jul 17</time>
-</a>
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/07/17/JDK动态代理源码解析/">JDK动态代理源码解析</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/07/17/Transactional实现步骤/" class="archive-article-date">
-  <time datetime="2019-07-17T07:05:02.000Z" itemprop="datePublished">Jul 17</time>
-</a>
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/07/17/Transactional实现步骤/">Transactional实现步骤</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/07/16/面试题总结/" class="archive-article-date">
-  <time datetime="2019-07-16T15:57:40.000Z" itemprop="datePublished">Jul 16</time>
-</a>
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/07/16/面试题总结/">面试题总结</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
   
 
 
   <nav id="page-nav">
     
-    <span class="page-number current">1</span><a class="page-number" href="/archives/2019/page/2/">2</a><a class="extend next" rel="next" href="/archives/2019/page/2/">Next &raquo;</a>
+    <a class="extend prev" rel="prev" href="/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span>
   </nav>
 
 </section>

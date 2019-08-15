@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="utf-8">
+  
+
+  
+  <title>8.16面试总结 | 一个懒得改主题的码农</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="首先，数据结构，一生之敌，补到科班水平不知道还要多久。 还好第二个面试官挺和善的，没有揪着问比如堆排序之类的，直接切到下一个问题了，很感谢他。 记录一下印象中自己答得不好的问题 1.题外话：自我介绍  简直尬聊… 2.redis的set get，多并发如何保证线程安全，除了lua脚本，watch之外呢？ 3.redis数据结构的list，sorted set，用法？区别？api？ 这题其实挺不应该">
+<meta name="keywords" content="面试总结">
+<meta property="og:type" content="article">
+<meta property="og:title" content="8.16面试总结">
+<meta property="og:url" content="http://yoursite.com/2019/08/16/8-16面试总结/index.html">
+<meta property="og:site_name" content="一个懒得改主题的码农">
+<meta property="og:description" content="首先，数据结构，一生之敌，补到科班水平不知道还要多久。 还好第二个面试官挺和善的，没有揪着问比如堆排序之类的，直接切到下一个问题了，很感谢他。 记录一下印象中自己答得不好的问题 1.题外话：自我介绍  简直尬聊… 2.redis的set get，多并发如何保证线程安全，除了lua脚本，watch之外呢？ 3.redis数据结构的list，sorted set，用法？区别？api？ 这题其实挺不应该">
+<meta property="og:locale" content="default">
+<meta property="og:updated_time" content="2019-08-15T17:07:46.657Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="8.16面试总结">
+<meta name="twitter:description" content="首先，数据结构，一生之敌，补到科班水平不知道还要多久。 还好第二个面试官挺和善的，没有揪着问比如堆排序之类的，直接切到下一个问题了，很感谢他。 记录一下印象中自己答得不好的问题 1.题外话：自我介绍  简直尬聊… 2.redis的set get，多并发如何保证线程安全，除了lua脚本，watch之外呢？ 3.redis数据结构的list，sorted set，用法？区别？api？ 这题其实挺不应该">
+  
+    <link rel="alternate" href="/atom.xml" title="一个懒得改主题的码农" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+</html>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">一个懒得改主题的码农</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-8-16面试总结" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/16/8-16面试总结/" class="article-date">
+  <time datetime="2019-08-15T16:54:40.000Z" itemprop="datePublished">2019-08-16</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      8.16面试总结
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>首先，数据结构，一生之敌，补到科班水平不知道还要多久。</p>
+<p>还好第二个面试官挺和善的，没有揪着问比如堆排序之类的，直接切到下一个问题了，很感谢他。</p>
+<p>记录一下印象中自己答得不好的问题</p>
+<p>1.题外话：自我介绍  简直尬聊…</p>
+<p>2.redis的set get，多并发如何保证线程安全，除了lua脚本，watch之外呢？</p>
+<p>3.redis数据结构的list，sorted set，用法？区别？api？ 这题其实挺不应该的</p>
+<p>4.mysql，一生之敌 innodb的myisam，count(1)和count(*)有什么区别？</p>
+<p>b+tree？分页存什么？ 其实这块还是不熟</p>
+<p>5.java的值传递和引用传递 忘了..</p>
+<p>6.RDB和AOF的区别 这题也不应该，只记得各自的实现原理，没有对比举一反三</p>
+<p>7.hashmap的put返回什么，我怎么把这个给忘了，啊啊</p>
+<p>回家第一件事情就是看源码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">final</span> V <span class="title">putVal</span><span class="params">(<span class="keyword">int</span> hash, K key, V value, <span class="keyword">boolean</span> onlyIfAbsent,</span></span></span><br><span class="line"><span class="function"><span class="params">                   <span class="keyword">boolean</span> evict)</span> </span>&#123;</span><br><span class="line">        Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; p; <span class="keyword">int</span> n, i;</span><br><span class="line">        <span class="keyword">if</span> ((tab = table) == <span class="keyword">null</span> || (n = tab.length) == <span class="number">0</span>)</span><br><span class="line">            n = (tab = resize()).length;</span><br><span class="line">        <span class="keyword">if</span> ((p = tab[i = (n - <span class="number">1</span>) &amp; hash]) == <span class="keyword">null</span>)</span><br><span class="line">            tab[i] = newNode(hash, key, value, <span class="keyword">null</span>);</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            Node&lt;K,V&gt; e; K k;</span><br><span class="line">            <span class="keyword">if</span> (p.hash == hash &amp;&amp;</span><br><span class="line">                ((k = p.key) == key || (key != <span class="keyword">null</span> &amp;&amp; key.equals(k))))</span><br><span class="line">                e = p;</span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> (p <span class="keyword">instanceof</span> TreeNode)</span><br><span class="line">                e = ((TreeNode&lt;K,V&gt;)p).putTreeVal(<span class="keyword">this</span>, tab, hash, key, value);</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> binCount = <span class="number">0</span>; ; ++binCount) &#123;</span><br><span class="line">                    <span class="keyword">if</span> ((e = p.next) == <span class="keyword">null</span>) &#123;</span><br><span class="line">                        p.next = newNode(hash, key, value, <span class="keyword">null</span>);</span><br><span class="line">                        <span class="keyword">if</span> (binCount &gt;= TREEIFY_THRESHOLD - <span class="number">1</span>) <span class="comment">// -1 for 1st</span></span><br><span class="line">                            treeifyBin(tab, hash);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="keyword">if</span> (e.hash == hash &amp;&amp;</span><br><span class="line">                        ((k = e.key) == key || (key != <span class="keyword">null</span> &amp;&amp; key.equals(k))))</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    p = e;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (e != <span class="keyword">null</span>) &#123; <span class="comment">// existing mapping for key</span></span><br><span class="line">                V oldValue = e.value;</span><br><span class="line">                <span class="keyword">if</span> (!onlyIfAbsent || oldValue == <span class="keyword">null</span>)</span><br><span class="line">                    e.value = value;</span><br><span class="line">                afterNodeAccess(e);</span><br><span class="line">                <span class="keyword">return</span> oldValue;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        ++modCount;</span><br><span class="line">        <span class="keyword">if</span> (++size &gt; threshold)</span><br><span class="line">            resize();</span><br><span class="line">        afterNodeInsertion(evict);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>结论：</p>
+<p>如果存在相同的key，返回oldValue，同时newKey对应的newValue覆盖oldValue</p>
+<p>如果是新的key，返回null</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/16/8-16面试总结/" data-id="cjzcxt5pl0000xsijkuuhgxsh" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/面试总结/">面试总结</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2019/08/05/redis-sentinel笔记/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">redis.sentinel笔记</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis-哨兵-笔记/">redis 哨兵 笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis-学习笔记/">redis 学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/主从-redis-笔记/">主从 redis 笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/笔记-redis/">笔记 redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/面试总结/">面试总结</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/debug一时爽，一直debug一直爽/" style="font-size: 10px;">debug一时爽，一直debug一直爽</a> <a href="/tags/feign-源码-调用链/" style="font-size: 10px;">feign 源码 调用链</a> <a href="/tags/redis-哨兵-笔记/" style="font-size: 10px;">redis 哨兵 笔记</a> <a href="/tags/redis-学习笔记/" style="font-size: 15px;">redis 学习笔记</a> <a href="/tags/主从-redis-笔记/" style="font-size: 10px;">主从 redis 笔记</a> <a href="/tags/源码-调用链/" style="font-size: 20px;">源码 调用链</a> <a href="/tags/笔记-redis/" style="font-size: 10px;">笔记 redis</a> <a href="/tags/面试总结/" style="font-size: 10px;">面试总结</a> <a href="/tags/面试题/" style="font-size: 15px;">面试题</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/07/">July 2019</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/08/16/8-16面试总结/">8.16面试总结</a>
+          </li>
+        
+          <li>
+            <a href="/2019/08/05/redis-sentinel笔记/">redis.sentinel笔记</a>
+          </li>
+        
+          <li>
+            <a href="/2019/08/04/redis主从笔记/">redis主从笔记</a>
+          </li>
+        
+          <li>
+            <a href="/2019/07/31/redis字符串学习笔记/">redis学习笔记</a>
+          </li>
+        
+          <li>
+            <a href="/2019/07/28/redis持久化学习笔记/">redis持久化学习笔记</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2019 一个懒得改主题的码农<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+
+
+  </div>
+</body>
+</html>

@@ -62,6 +62,61 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-8-16面试总结" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/08/16/8-16面试总结/" class="article-date">
+  <time datetime="2019-08-15T16:54:40.000Z" itemprop="datePublished">2019-08-16</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/08/16/8-16面试总结/">8.16面试总结</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>首先，数据结构，一生之敌，补到科班水平不知道还要多久。</p>
+<p>还好第二个面试官挺和善的，没有揪着问比如堆排序之类的，直接切到下一个问题了，很感谢他。</p>
+<p>记录一下印象中自己答得不好的问题</p>
+<p>1.题外话：自我介绍  简直尬聊…</p>
+<p>2.redis的set get，多并发如何保证线程安全，除了lua脚本，watch之外呢？</p>
+<p>3.redis数据结构的list，sorted set，用法？区别？api？ 这题其实挺不应该的</p>
+<p>4.mysql，一生之敌 innodb的myisam，count(1)和count(*)有什么区别？</p>
+<p>b+tree？分页存什么？ 其实这块还是不熟</p>
+<p>5.java的值传递和引用传递 忘了..</p>
+<p>6.RDB和AOF的区别 这题也不应该，只记得各自的实现原理，没有对比举一反三</p>
+<p>7.hashmap的put返回什么，我怎么把这个给忘了，啊啊</p>
+<p>回家第一件事情就是看源码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">final</span> V <span class="title">putVal</span><span class="params">(<span class="keyword">int</span> hash, K key, V value, <span class="keyword">boolean</span> onlyIfAbsent,</span></span></span><br><span class="line"><span class="function"><span class="params">                   <span class="keyword">boolean</span> evict)</span> </span>&#123;</span><br><span class="line">        Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; p; <span class="keyword">int</span> n, i;</span><br><span class="line">        <span class="keyword">if</span> ((tab = table) == <span class="keyword">null</span> || (n = tab.length) == <span class="number">0</span>)</span><br><span class="line">            n = (tab = resize()).length;</span><br><span class="line">        <span class="keyword">if</span> ((p = tab[i = (n - <span class="number">1</span>) &amp; hash]) == <span class="keyword">null</span>)</span><br><span class="line">            tab[i] = newNode(hash, key, value, <span class="keyword">null</span>);</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            Node&lt;K,V&gt; e; K k;</span><br><span class="line">            <span class="keyword">if</span> (p.hash == hash &amp;&amp;</span><br><span class="line">                ((k = p.key) == key || (key != <span class="keyword">null</span> &amp;&amp; key.equals(k))))</span><br><span class="line">                e = p;</span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> (p <span class="keyword">instanceof</span> TreeNode)</span><br><span class="line">                e = ((TreeNode&lt;K,V&gt;)p).putTreeVal(<span class="keyword">this</span>, tab, hash, key, value);</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> binCount = <span class="number">0</span>; ; ++binCount) &#123;</span><br><span class="line">                    <span class="keyword">if</span> ((e = p.next) == <span class="keyword">null</span>) &#123;</span><br><span class="line">                        p.next = newNode(hash, key, value, <span class="keyword">null</span>);</span><br><span class="line">                        <span class="keyword">if</span> (binCount &gt;= TREEIFY_THRESHOLD - <span class="number">1</span>) <span class="comment">// -1 for 1st</span></span><br><span class="line">                            treeifyBin(tab, hash);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="keyword">if</span> (e.hash == hash &amp;&amp;</span><br><span class="line">                        ((k = e.key) == key || (key != <span class="keyword">null</span> &amp;&amp; key.equals(k))))</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    p = e;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (e != <span class="keyword">null</span>) &#123; <span class="comment">// existing mapping for key</span></span><br><span class="line">                V oldValue = e.value;</span><br><span class="line">                <span class="keyword">if</span> (!onlyIfAbsent || oldValue == <span class="keyword">null</span>)</span><br><span class="line">                    e.value = value;</span><br><span class="line">                afterNodeAccess(e);</span><br><span class="line">                <span class="keyword">return</span> oldValue;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        ++modCount;</span><br><span class="line">        <span class="keyword">if</span> (++size &gt; threshold)</span><br><span class="line">            resize();</span><br><span class="line">        afterNodeInsertion(evict);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>结论：</p>
+<p>如果存在相同的key，返回oldValue，同时newKey对应的newValue覆盖oldValue</p>
+<p>如果是新的key，返回null</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/08/16/8-16面试总结/" data-id="cjzcxt5pl0000xsijkuuhgxsh" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/面试总结/">面试总结</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-redis-sentinel笔记" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/08/05/redis-sentinel笔记/" class="article-date">
@@ -116,7 +171,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/05/redis-sentinel笔记/" data-id="cjyy0hy190001tkijpq5yibat" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/08/05/redis-sentinel笔记/" data-id="cjzcxt5qp0008xsijd7pbaj0e" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/redis-哨兵-笔记/">redis 哨兵 笔记</a></li></ul>
@@ -203,7 +258,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/08/04/redis主从笔记/" data-id="cjyy0hy1o000atkij3njzlx8l" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/08/04/redis主从笔记/" data-id="cjzcxt5qp000bxsijo614xkwr" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/主从-redis-笔记/">主从 redis 笔记</a></li></ul>
@@ -266,7 +321,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/31/redis字符串学习笔记/" data-id="cjyy0hy1r000ctkijavg8ydeb" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/31/redis字符串学习笔记/" data-id="cjzcxt5r9000gxsijuwsix962" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/redis-学习笔记/">redis 学习笔记</a></li></ul>
@@ -396,7 +451,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/28/redis持久化学习笔记/" data-id="cjyy0hy1m0008tkijqs0goe86" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/28/redis持久化学习笔记/" data-id="cjzcxt5r9000kxsijuc0izf7a" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/redis-学习笔记/">redis 学习笔记</a></li></ul>
@@ -481,7 +536,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/26/redis字典学习笔记/" data-id="cjyy0hy2g000ntkijz1hs3v6e" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/26/redis字典学习笔记/" data-id="cjzcxt5qz000exsijc3vsav89" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/笔记-redis/">笔记 redis</a></li></ul>
@@ -576,7 +631,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/23/面试题总结2/" data-id="cjyy0hy2k000otkij9f376s21" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/23/面试题总结2/" data-id="cjzcxt5rj000mxsijytsqwmxq" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
@@ -706,7 +761,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/19/dubbo实现步骤/" data-id="cjyy0hy1j0005tkijpu2fyvfr" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/19/dubbo实现步骤/" data-id="cjzcxt5qp0007xsijct1cs19w" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
@@ -785,7 +840,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/18/eureka实现步骤/" data-id="cjyy0hy2w000rtkijbu7naacg" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/18/eureka实现步骤/" data-id="cjzcxt5qp0006xsij8dhsazku" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
@@ -886,86 +941,10 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/JDK动态代理源码解析/" data-id="cjyy0hy1h0004tkij0n8pmulo" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2019/07/17/JDK动态代理源码解析/" data-id="cjzcxt5qf0003xsijhnbtsh5r" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-Transactional实现步骤" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2019/07/17/Transactional实现步骤/" class="article-date">
-  <time datetime="2019-07-17T07:05:02.000Z" itemprop="datePublished">2019-07-17</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/07/17/Transactional实现步骤/">Transactional实现步骤</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>想当初当实习生的时候，Spring Boot一个@Transactional就能实现事务控制了，不像在家自学的时候还要配置事务管理器，写web.xml，感叹真是个好用的框架。</p>
-<p>工作了也快一年半了，不能只会用，还要知道原理是什么，为什么一个注解就能实现本该很复杂的功能，启动Spring Boot的时候都发生了什么，今天跟踪源码走一圈流程。</p>
-<p>这次倒着推理一下，首先上次面试有道题是事务传播会失效吗，其实在同一个类里调用另外一个带@Transactional注解的方法，后者的事务是会失效的，上图。<img src="/2019/07/17/Transactional实现步骤/001.png" alt></p>
-<p>理论上我调用firstAdd方法，内部再调用了secondAdd方法，数据库里应该只有firstAdd字段才对，但实际上两者都没有回滚。我打印了一下controller层@Autowired的service和firstAdd方法里的secondAdd方法(等同于this.secondAdd())，真相大白。</p>
-<p><img src="/2019/07/17/Transactional实现步骤/02.png" alt></p>
-<p>实际上Spring给我们注入的是Cglib增强过的代理类，this当然是无法实现事务的，一定有哪里扫描到了@Transactional注解实例化并返回了同名的代理类，那么就简单了，给DynamicAdvisedInterceptor的intercept打个断点（类似于JDK的InvocationHandler的invoke）。</p>
-<p>反正给自己看的，后面直接把流程干货提出来吧 <img src="/2019/07/17/Transactional实现步骤/%E6%80%82.jpg" alt></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Object&gt; chain = <span class="keyword">this</span>.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);</span><br></pre></td></tr></table></figure>
-
-<p>(这里先无视chain数组里的值哪里来的)</p>
-<p>chain内部有一个TransactionalInterceptor</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">retVal = <span class="keyword">new</span> CglibMethodInvocation(proxy, target, method, args, targetClass, chain, methodProxy).proceed();</span><br></pre></td></tr></table></figure>
-
-<p>进入proceed()方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(<span class="keyword">this</span>);</span><br></pre></td></tr></table></figure>
-
-<p>不得不说Spring的命名真的优雅，TransactionInterceptor明显是MethodInterceptor的子类。</p>
-<p>进入invoke方法。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> invokeWithinTransaction(invocation.getMethod(), targetClass, </span><br><span class="line">    <span class="keyword">new</span> InvocationCallback() &#123;   </span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> Object <span class="title">proceedWithInvocation</span><span class="params">()</span> <span class="keyword">throws</span> Throwable </span>&#123;      </span><br><span class="line">            <span class="keyword">return</span> invocation.proceed();   </span><br><span class="line">        &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-
-<p>这一步得出@Transactional上对应的参数：事务传播，事务隔离等，然后封装成一个类</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> TransactionAttribute txAttr = getTransactionAttributeSource().getTransactionAttribute(method, targetClass);</span><br></pre></td></tr></table></figure>
-
-<p>这一步用于得到事务管理器，用于之后的提交或者回滚</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> PlatformTransactionManager tm = determineTransactionManager(txAttr);</span><br></pre></td></tr></table></figure>
-
-<p>之后就是执行SQL了</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">retVal = invocation.proceedWithInvocation();</span><br></pre></td></tr></table></figure>
-
-<p>这里用try-catch裹上一层，如果catch到异常，</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">completeTransactionAfterThrowing(txInfo, ex);</span><br></pre></td></tr></table></figure>
-
-<p>先判断是否能和注解上明示的异常匹配，不能就用父类判断(RuntimeException或者Error)。</p>
-<p>没有抛异常就提交事务。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">commitTransactionAfterReturning(txInfo);</span><br></pre></td></tr></table></figure>
-
-<p>本质还是JDBC，底层代码太长就不看了。（其实是看不懂）</p>
-<p>之后分析下什么时候我们注入的service被增强为代理类，以及这个TransactionInterceptor从哪来的。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2019/07/17/Transactional实现步骤/" data-id="cjyy0hy120000tkijsxov5yf1" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li></ul>
 
     </footer>
   </div>
@@ -992,7 +971,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis-哨兵-笔记/">redis 哨兵 笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis-学习笔记/">redis 学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/主从-redis-笔记/">主从 redis 笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/笔记-redis/">笔记 redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/debug一时爽，一直debug一直爽/">debug一时爽，一直debug一直爽</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/feign-源码-调用链/">feign 源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis-哨兵-笔记/">redis 哨兵 笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis-学习笔记/">redis 学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/主从-redis-笔记/">主从 redis 笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/源码-调用链/">源码 调用链</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/笔记-redis/">笔记 redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/面试总结/">面试总结</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/面试题/">面试题</a></li></ul>
     </div>
   </div>
 
@@ -1002,7 +981,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/debug一时爽，一直debug一直爽/" style="font-size: 10px;">debug一时爽，一直debug一直爽</a> <a href="/tags/feign-源码-调用链/" style="font-size: 10px;">feign 源码 调用链</a> <a href="/tags/redis-哨兵-笔记/" style="font-size: 10px;">redis 哨兵 笔记</a> <a href="/tags/redis-学习笔记/" style="font-size: 15px;">redis 学习笔记</a> <a href="/tags/主从-redis-笔记/" style="font-size: 10px;">主从 redis 笔记</a> <a href="/tags/源码-调用链/" style="font-size: 20px;">源码 调用链</a> <a href="/tags/笔记-redis/" style="font-size: 10px;">笔记 redis</a> <a href="/tags/面试题/" style="font-size: 15px;">面试题</a>
+      <a href="/tags/debug一时爽，一直debug一直爽/" style="font-size: 10px;">debug一时爽，一直debug一直爽</a> <a href="/tags/feign-源码-调用链/" style="font-size: 10px;">feign 源码 调用链</a> <a href="/tags/redis-哨兵-笔记/" style="font-size: 10px;">redis 哨兵 笔记</a> <a href="/tags/redis-学习笔记/" style="font-size: 15px;">redis 学习笔记</a> <a href="/tags/主从-redis-笔记/" style="font-size: 10px;">主从 redis 笔记</a> <a href="/tags/源码-调用链/" style="font-size: 20px;">源码 调用链</a> <a href="/tags/笔记-redis/" style="font-size: 10px;">笔记 redis</a> <a href="/tags/面试总结/" style="font-size: 10px;">面试总结</a> <a href="/tags/面试题/" style="font-size: 15px;">面试题</a>
     </div>
   </div>
 
@@ -1024,6 +1003,10 @@
       <ul>
         
           <li>
+            <a href="/2019/08/16/8-16面试总结/">8.16面试总结</a>
+          </li>
+        
+          <li>
             <a href="/2019/08/05/redis-sentinel笔记/">redis.sentinel笔记</a>
           </li>
         
@@ -1037,10 +1020,6 @@
         
           <li>
             <a href="/2019/07/28/redis持久化学习笔记/">redis持久化学习笔记</a>
-          </li>
-        
-          <li>
-            <a href="/2019/07/26/redis字典学习笔记/">redis字典学习笔记</a>
           </li>
         
       </ul>
